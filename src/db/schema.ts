@@ -7,6 +7,15 @@ export const stores = pgTable('stores', {
     name: text('name').notNull(),
     type: varchar('type', { length: 50 }).notNull().default('stable'), // 'stable', 'informal'
     address: text('address'),
+    isActive: boolean('is_active').default(true),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Categories: User-defined categories (Libros, Cafe, Juegos, etc.)
+export const categories = pgTable('categories', {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    icon: varchar('icon', { length: 50 }).default('Package'),
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -16,7 +25,8 @@ export const items = pgTable('items', {
     name: text('name').notNull(),
     description: text('description'),
     barcode: varchar('barcode', { length: 100 }).unique(),
-    type: varchar('type', { length: 50 }).notNull(), // 'book', 'product', 'ingredient'
+    type: varchar('type', { length: 50 }).notNull(), // legacy, to be replaced by categoryRef
+    categoryId: integer('category_id').references(() => categories.id),
     category: varchar('category', { length: 100 }),
     imageUrl: text('image_url'),
     metadata: text('metadata'), // AI generated metadata (JSON string)

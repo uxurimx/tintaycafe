@@ -1,20 +1,13 @@
 import { db } from "@/db";
-import { items, inventory, stores } from "@/db/schema";
+import { items, inventory, stores, categories } from "@/db/schema";
 import InventoryList from "@/components/InventoryList";
 import { eq } from "drizzle-orm";
 import { seedDatabase } from "@/app/api/db/seed";
 
-interface InventoryItem {
-    id: number;
-    name: string;
-    barcode: string;
-    type: string;
-    quantity: number;
-    minStock: number;
-}
-
 export default async function InventoryPage() {
-    let displayItems: InventoryItem[] = [];
+    let displayItems = [];
+    let dbCategories = [];
+    let dbStores = [];
     let dbError = false;
 
     try {
@@ -24,42 +17,47 @@ export default async function InventoryPage() {
             await seedDatabase();
         }
 
+        // Fetch master data
+        dbCategories = await db.select().from(categories);
+        dbStores = await db.select().from(stores);
+
         const stockData = await db
             .select({
                 id: items.id,
                 name: items.name,
                 barcode: items.barcode,
                 type: items.type,
+                categoryId: items.categoryId,
                 quantity: inventory.quantity,
                 minStock: inventory.minStock,
             })
             .from(items)
             .leftJoin(inventory, eq(items.id, inventory.itemId))
-            .limit(20);
+            .limit(50);
 
         displayItems = stockData.map(item => ({
             ...item,
             barcode: item.barcode || "N/A",
             quantity: item.quantity || 0,
             minStock: item.minStock || 5,
-        })) as InventoryItem[];
+        }));
 
     } catch (error) {
-        console.error("Database connection failed, using mock data:", error);
+        console.error("Database connection failed:", error);
         dbError = true;
     }
 
-    if (!dbError && displayItems.length === 0) {
-        // Fallback labels if DB is empty but connected
-        displayItems = [
-            { id: 1, name: "Don Quijote de la Mancha", barcode: "9788424116263", type: "book", quantity: 5, minStock: 2 },
-            { id: 2, name: "Café de Especialidad (Grano)", barcode: "COF-001", type: "product", quantity: 12, minStock: 15 },
+    // Fallback initial categories if none exist
+    if (dbCategories.length === 0 && !dbError) {
+        dbCategories = [
+            { id: 1, name: "Libros", icon: "BookOpen" },
+            { id: 2, name: "Grano", icon: "Coffee" },
         ];
     }
 
     return (
         <div className="p-8">
-            <div className="max-w-7xl mx-auto text-left">
+            <div className="max-w-7xl mx-auto">
                 {dbError && (
                     <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-500 text-sm flex items-center gap-3 animate-fade-in text-left">
                         <span className="relative flex h-3 w-3">
@@ -67,11 +65,15 @@ export default async function InventoryPage() {
                             <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
                         </span>
                         <span>
-                            <strong>Modo Resiliencia:</strong> No se detectó la estructura de sucursales. Verifica tu base de datos Neon.
+                            <strong>Modo Resiliencia:</strong> No se pudo conectar con el Nexus. Mostrando datos locales.
                         </span>
                     </div>
                 )}
-                <InventoryList initialItems={displayItems} />
+                <InventoryList
+                    initialItems={displayItems as any}
+                    initialCategories={dbCategories as any}
+                    initialStores={dbStores as any}
+                />
             </div>
         </div>
     );

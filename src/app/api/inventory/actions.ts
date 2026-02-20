@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { items, inventory, stores } from "@/db/schema";
 import { pusherServer } from "@/lib/pusher/server";
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 
 export async function addInventoryItem(formData: FormData) {
     const name = formData.get("name") as string;
@@ -12,6 +12,7 @@ export async function addInventoryItem(formData: FormData) {
     const storeId = parseInt(formData.get("storeId") as string);
     const quantity = parseFloat(formData.get("quantity") as string);
     const type = formData.get("type") as string;
+    const categoryId = formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null;
 
     // 0. Ensure Store exists (Self-healing)
     const existingStore = await db.query.stores.findFirst({
@@ -33,10 +34,11 @@ export async function addInventoryItem(formData: FormData) {
             name,
             barcode,
             type: type as any,
+            categoryId,
         })
         .onConflictDoUpdate({
             target: items.barcode,
-            set: { name },
+            set: { name, categoryId },
         })
         .returning();
 
@@ -65,6 +67,70 @@ export async function addInventoryItem(formData: FormData) {
     }
 
     revalidatePath("/inventory");
+}
+
+export async function deleteInventoryItem(itemId: number) {
+    try {
+        // Delete related inventory first
+        await db.delete(inventory).where(eq(inventory.itemId, itemId));
+        // Delete item
+        await db.delete(items).where(eq(items.id, itemId));
+
+        revalidatePath("/inventory");
+        return { success: true };
+    } catch (e) {
+        console.error("Delete failed:", e);
+        return { success: false };
+    }
+}
+
+export async function updateInventoryItem(itemId: number, storeId: number, data: { name?: string; quantity?: number; minStock?: number; categoryId?: number | null }) {
+    try {
+        if (data.name || data.categoryId !== undefined) {
+            await db.update(items).set({
+                name: data.name,
+                categoryId: data.categoryId
+            }).where(eq(items.id, itemId));
+        }
+
+        if (data.quantity !== undefined || data.minStock !== undefined) {
+            await db.update(inventory).set({
+                quantity: data.quantity,
+                minStock: data.minStock,
+                updatedAt: new Date()
+            }).where(and(eq(inventory.itemId, itemId), eq(inventory.storeId, storeId)));
+        }
+
+        revalidatePath("/inventory");
+        return { success: true };
+    } catch (e) {
+        console.error("Update failed:", e);
+        return { success: false };
+    }
+}
+
+export async function transferStock(itemId: number, fromStoreId: number, toStoreId: number, quantityToMove: number) {
+    try {
+        // From store deduction
+        await db.update(inventory)
+            .set({ quantity: sql`${inventory.quantity} - ${quantityToMove}` })
+            .where(eq(inventory.itemId, itemId))
+            .where(eq(inventory.storeId, fromStoreId));
+
+        // To store addition
+        await db.insert(inventory)
+            .values({ itemId, storeId: toStoreId, quantity: quantityToMove })
+            .onConflictDoUpdate({
+                target: [inventory.storeId, inventory.itemId],
+                set: { quantity: sql`${inventory.quantity} + ${quantityToMove}` }
+            });
+
+        revalidatePath("/inventory");
+        return { success: true };
+    } catch (e) {
+        console.error("Transfer failed:", e);
+        return { success: false };
+    }
 }
 
 export async function processVisionAI(imageBase64: string) {
