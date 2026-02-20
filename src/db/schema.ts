@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, doublePrecision, varchar, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, timestamp, doublePrecision, varchar, boolean, unique } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Stores: Stable sucursales and informal points
@@ -32,7 +32,9 @@ export const inventory = pgTable('inventory', {
     quantity: doublePrecision('quantity').notNull().default(0),
     minStock: doublePrecision('min_stock').default(5),
     updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => ({
+    unq: unique().on(table.storeId, table.itemId),
+}));
 
 // Recipes: Ingredients needed for prepared products (e.g., 100g coffee for an Espresso)
 export const recipes = pgTable('recipes', {

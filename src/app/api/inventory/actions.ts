@@ -1,9 +1,10 @@
 "use server";
 
 import { db } from "@/db";
-import { items, inventory } from "@/db/schema";
+import { items, inventory, stores } from "@/db/schema";
 import { pusherServer } from "@/lib/pusher/server";
 import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
 
 export async function addInventoryItem(formData: FormData) {
     const name = formData.get("name") as string;
@@ -11,6 +12,19 @@ export async function addInventoryItem(formData: FormData) {
     const storeId = parseInt(formData.get("storeId") as string);
     const quantity = parseFloat(formData.get("quantity") as string);
     const type = formData.get("type") as string;
+
+    // 0. Ensure Store exists (Self-healing)
+    const existingStore = await db.query.stores.findFirst({
+        where: eq(stores.id, storeId)
+    });
+
+    if (!existingStore) {
+        await db.insert(stores).values({
+            id: storeId,
+            name: storeId === 1 ? "Sucursal Central" : `Sucursal ${storeId}`,
+            type: "stable"
+        });
+    }
 
     // 1. Create or Update Item
     const [item] = await db
@@ -39,12 +53,16 @@ export async function addInventoryItem(formData: FormData) {
             set: { quantity },
         });
 
-    // 3. Real-time broadcast
-    await pusherServer.trigger("inventory-updates", "stock-changed", {
-        itemId: item.id,
-        storeId,
-        newQuantity: quantity,
-    });
+    // 3. Real-time broadcast (Resilient)
+    try {
+        await pusherServer.trigger("inventory-updates", "stock-changed", {
+            itemId: item.id,
+            storeId,
+            newQuantity: quantity,
+        });
+    } catch (e) {
+        console.warn("Pusher broadcast failed (ENOTFOUND), but inventory was saved:", e);
+    }
 
     revalidatePath("/inventory");
 }
