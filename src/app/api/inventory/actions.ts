@@ -4,7 +4,9 @@ import { db } from "@/db";
 import { items, inventory, stores } from "@/db/schema";
 import { pusherServer } from "@/lib/pusher/server";
 import { revalidatePath } from "next/cache";
+import { auth } from "@clerk/nextjs/server";
 import { eq, sql, and } from "drizzle-orm";
+import { transactions } from "@/db/schema";
 
 export async function addInventoryItem(formData: FormData) {
     const name = formData.get("name") as string;
@@ -67,6 +69,19 @@ export async function addInventoryItem(formData: FormData) {
     }
 
     revalidatePath("/inventory");
+    return {
+        success: true,
+        data: {
+            id: item.id,
+            name,
+            barcode,
+            quantity,
+            type,
+            categoryId,
+            storeId,
+            uId: `${item.id}-${storeId}`
+        }
+    };
 }
 
 export async function deleteInventoryItem(itemId: number) {
@@ -102,7 +117,15 @@ export async function updateInventoryItem(itemId: number, storeId: number, data:
         }
 
         revalidatePath("/inventory");
-        return { success: true };
+        return {
+            success: true,
+            data: {
+                id: itemId,
+                storeId,
+                ...data,
+                uId: `${itemId}-${storeId}`
+            }
+        };
     } catch (e) {
         console.error("Update failed:", e);
         return { success: false };
@@ -126,6 +149,19 @@ export async function transferStock(itemId: number, fromStoreId: number, toStore
             });
 
         revalidatePath("/inventory");
+
+        // 3. Log Transaction History
+        const { userId } = await auth();
+        if (userId) {
+            await db.insert(transactions).values({
+                storeId: fromStoreId,
+                userId: userId,
+                total: quantityToMove, // Using total to store quantity for transfers for now
+                type: 'transfer',
+                createdAt: new Date()
+            });
+        }
+
         return { success: true };
     } catch (e) {
         console.error("Transfer failed:", e);

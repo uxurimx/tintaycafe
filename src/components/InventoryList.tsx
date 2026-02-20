@@ -29,6 +29,8 @@ import {
 import { addInventoryItem, deleteInventoryItem, updateInventoryItem, transferStock } from "@/app/api/inventory/actions";
 import { createCategory, deleteCategory } from "@/app/api/categories/actions";
 import { createStore } from "@/app/api/stores/actions";
+import { getStoreAnalytics } from "@/app/api/stores/analytics";
+import StoreIntelligence from "./StoreIntelligence";
 
 interface Category {
     id: number;
@@ -67,6 +69,19 @@ export default function InventoryList({
     const [categories, setCategories] = useState(initialCategories);
     const [stores, setStores] = useState(initialStores);
 
+    // Sync state with server-side props when they change (e.g. after revalidatePath)
+    useEffect(() => {
+        setItems(initialItems);
+    }, [initialItems]);
+
+    useEffect(() => {
+        setCategories(initialCategories);
+    }, [initialCategories]);
+
+    useEffect(() => {
+        setStores(initialStores);
+    }, [initialStores]);
+
     const [activeCategory, setActiveCategory] = useState('all');
     const [activeStore, setActiveStore] = useState('all');
     const [searchQuery, setSearchQuery] = useState("");
@@ -77,6 +92,10 @@ export default function InventoryList({
     const [isProcessingAI, setIsProcessingAI] = useState(false);
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
     const [isEditMode, setIsEditMode] = useState(false);
+
+    // Store Intelligence State
+    const [viewingStoreInfo, setViewingStoreInfo] = useState<any | null>(null);
+    const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
     useEffect(() => {
         const channel = pusherClient.subscribe("inventory-updates");
@@ -116,6 +135,23 @@ export default function InventoryList({
             default: return <Package className="w-4 h-4" />;
         }
     };
+
+    const handleViewStore = async (storeId: number) => {
+        setIsLoadingAnalytics(true);
+        const res = await getStoreAnalytics(storeId);
+        if (res.success) {
+            setViewingStoreInfo(res.data);
+            setIsModalOpen(false);
+        }
+        setIsLoadingAnalytics(false);
+    };
+
+    if (viewingStoreInfo) {
+        return <StoreIntelligence
+            initialData={viewingStoreInfo}
+            onBack={() => setViewingStoreInfo(null)}
+        />;
+    }
 
     return (
         <div className="w-full space-y-8 animate-fade-in p-2">
@@ -310,14 +346,20 @@ export default function InventoryList({
                         {modalType === 'item' && (
                             <form action={async (formData) => {
                                 if (isEditMode && selectedItem) {
-                                    let sid = parseInt(formData.get("storeId") as string) || 1;
-                                    await updateInventoryItem(selectedItem.id, sid, {
+                                    let sid = parseInt(formData.get("storeId") as string) || selectedItem.storeId;
+                                    const res = await updateInventoryItem(selectedItem.id, sid, {
                                         name: formData.get("name") as string,
                                         quantity: parseFloat(formData.get("quantity") as string),
                                         categoryId: formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null
                                     });
+                                    if (res.success && res.data) {
+                                        setItems(prev => prev.map(i => i.uId === res.data.uId ? { ...i, ...res.data } : i));
+                                    }
                                 } else {
-                                    await addInventoryItem(formData);
+                                    const res = await addInventoryItem(formData);
+                                    if (res.success && res.data) {
+                                        setItems(prev => [...prev, res.data as any]);
+                                    }
                                 }
                                 setIsModalOpen(false);
                             }} className="grid grid-cols-2 gap-8">
@@ -452,12 +494,22 @@ export default function InventoryList({
                                     <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mapa de Sucursales</h4>
                                     <div className="space-y-2">
                                         {stores.map(s => (
-                                            <div key={s.id} className="p-5 bg-slate-900 border border-slate-800 rounded-3xl flex justify-between items-center group">
+                                            <div
+                                                key={s.id}
+                                                onClick={() => handleViewStore(s.id)}
+                                                className="p-5 bg-slate-900 border border-slate-800 rounded-3xl flex justify-between items-center group cursor-pointer hover:border-indigo-500/50 transition-all active:scale-[0.98]"
+                                            >
                                                 <div>
-                                                    <p className="text-white font-black uppercase tracking-tight">{s.name}</p>
+                                                    <p className="text-white font-black uppercase tracking-tight group-hover:text-indigo-400 transition-colors">{s.name}</p>
                                                     <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{s.type} | ID_{s.id}</p>
                                                 </div>
-                                                <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                                <div className="flex items-center gap-4">
+                                                    {isLoadingAnalytics ? (
+                                                        <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                                                    ) : (
+                                                        <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)] group-hover:scale-150 transition-transform" />
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

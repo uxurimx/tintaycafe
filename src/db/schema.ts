@@ -111,3 +111,12 @@ export const transactionRelations = relations(transactions, ({ one, many }) => (
     customer: one(customers, { fields: [transactions.customerId], references: [customers.id] }),
     items: many(transactionItems),
 }));
+export const transactionItemRelations = relations(transactionItems, ({ one }) => ({
+    transaction: one(transactions, { fields: [transactionItems.transactionId], references: [transactions.id] }),
+    item: one(items, { fields: [transactionItems.itemId], references: [items.id] }),
+}));
+
+export const userRelations = relations(users, ({ one, many }) => ({
+    store: one(stores, { fields: [users.storeId], references: [stores.id] }),
+    transactions: many(transactions),
+}));
