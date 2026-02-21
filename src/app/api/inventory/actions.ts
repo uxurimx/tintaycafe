@@ -15,6 +15,9 @@ export async function addInventoryItem(formData: FormData) {
     const quantity = parseFloat(formData.get("quantity") as string);
     const type = formData.get("type") as string;
     const categoryId = formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null;
+    const costPrice = formData.get("costPrice") ? parseFloat(formData.get("costPrice") as string) : 0;
+    const unit = formData.get("unit") as string;
+    const supplierId = formData.get("supplierId") ? parseInt(formData.get("supplierId") as string) : null;
 
     // 0. Ensure Store exists (Self-healing)
     const existingStore = await db.query.stores.findFirst({
@@ -37,10 +40,13 @@ export async function addInventoryItem(formData: FormData) {
             barcode,
             type: type as any,
             categoryId,
+            costPrice,
+            unit,
+            supplierId,
         })
         .onConflictDoUpdate({
             target: items.barcode,
-            set: { name, categoryId },
+            set: { name, categoryId, costPrice, unit, supplierId },
         })
         .returning();
 
@@ -99,12 +105,23 @@ export async function deleteInventoryItem(itemId: number) {
     }
 }
 
-export async function updateInventoryItem(itemId: number, storeId: number, data: { name?: string; quantity?: number; minStock?: number; categoryId?: number | null }) {
+export async function updateInventoryItem(itemId: number, storeId: number, data: {
+    name?: string;
+    quantity?: number;
+    minStock?: number;
+    categoryId?: number | null;
+    costPrice?: number;
+    unit?: string;
+    supplierId?: number | null;
+}) {
     try {
-        if (data.name || data.categoryId !== undefined) {
+        if (data.name || data.categoryId !== undefined || data.costPrice !== undefined || data.unit !== undefined || data.supplierId !== undefined) {
             await db.update(items).set({
                 name: data.name,
-                categoryId: data.categoryId
+                categoryId: data.categoryId,
+                costPrice: data.costPrice,
+                unit: data.unit,
+                supplierId: data.supplierId,
             }).where(eq(items.id, itemId));
         }
 
@@ -137,8 +154,7 @@ export async function transferStock(itemId: number, fromStoreId: number, toStore
         // From store deduction
         await db.update(inventory)
             .set({ quantity: sql`${inventory.quantity} - ${quantityToMove}` })
-            .where(eq(inventory.itemId, itemId))
-            .where(eq(inventory.storeId, fromStoreId));
+            .where(and(eq(inventory.itemId, itemId), eq(inventory.storeId, fromStoreId)));
 
         // To store addition
         await db.insert(inventory)

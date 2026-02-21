@@ -1,14 +1,28 @@
 import { db } from "@/db";
-import { items, inventory } from "@/db/schema";
+import { items, inventory, categories } from "@/db/schema";
 import { eq, gt } from "drizzle-orm";
 import Link from "next/link";
-import { Coffee, Book, ShoppingBag, ArrowRight, Zap, Sparkles, Plus } from "lucide-react";
+import {
+  Coffee,
+  Book,
+  ShoppingBag,
+  ArrowRight,
+  Zap,
+  Sparkles,
+  Users,
+  Gamepad2,
+  MapPin,
+  ExternalLink
+} from "lucide-react";
 import { auth } from "@clerk/nextjs/server";
+import { SignInButton, UserButton } from "@clerk/nextjs";
+import ClientShop from "@/components/ClientShop";
+import JoinLoyalty from "@/components/JoinLoyalty";
 
 export default async function EcommerceStore() {
   const { userId } = await auth();
 
-  // Fetch real inventory for the public store (items in stock)
+  // Fetch real products with inventory for the shop
   let products = [];
   try {
     const stockData = await db
@@ -19,131 +33,202 @@ export default async function EcommerceStore() {
         price: items.price,
         imageUrl: items.imageUrl,
         quantity: inventory.quantity,
+        categoryName: categories.name,
+        description: items.description,
+        metadata: items.metadata,
       })
       .from(items)
       .innerJoin(inventory, eq(items.id, inventory.itemId))
+      .leftJoin(categories, eq(items.categoryId, categories.id))
       .where(gt(inventory.quantity, 0))
-      .limit(8);
+      .limit(20);
     products = stockData;
   } catch (e) {
-    // Fallback if DB not ready
-    products = [
-      { id: 1, name: "Don Quijote de la Mancha", type: "book", price: 450, quantity: 5 },
-      { id: 2, name: "Cien Años de Soledad", type: "book", price: 380, quantity: 3 },
-      { id: 3, name: "Café de Especialidad 500g", type: "product", price: 290, quantity: 12 },
-    ];
+    console.error("Failed to fetch products for landing page", e);
+    // Minimal fallback handled inside ClientShop or with empty array
+    products = [];
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      {/* Dynamic Header */}
-      <header className="fixed top-0 w-full p-4 md:p-6 flex justify-between items-center z-50 backdrop-blur-xl bg-slate-950/60 border-b border-slate-900">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-            <Coffee className="text-white w-5 h-5" />
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-indigo-500/30">
+      {/* Premium Navigation */}
+      <header className="fixed top-0 w-full p-4 md:p-6 flex justify-between items-center z-[100] backdrop-blur-2xl bg-slate-950/60 border-b border-white/5">
+        <div className="flex items-center gap-4">
+          <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg shadow-indigo-500/20">
+            <Coffee className="text-white w-6 h-6" />
           </div>
-          <span className="font-outfit font-bold text-xl tracking-tight">Tinta y Café <span className="text-indigo-400">Shop</span></span>
+          <div className="flex flex-col">
+            <span className="font-outfit font-black text-xl tracking-tighter leading-none">TINTA Y CAFÉ</span>
+            <span className="text-[9px] font-black uppercase tracking-[0.4em] text-indigo-400 mt-1">NEXUS DURANGO</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {userId && (
-            <Link href="/inventory" className="text-slate-400 hover:text-white text-xs font-bold uppercase tracking-widest hidden md:block">
-              Admin Panel
-            </Link>
+        <nav className="hidden lg:flex items-center gap-8">
+          {['Servicios', 'Librería', 'Comunidad', 'Ubicación'].map((item) => (
+            <a key={item} href={`#${item.toLowerCase()}`} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-indigo-400 transition-colors">
+              {item}
+            </a>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-6">
+          {!userId ? (
+            <div className="flex items-center gap-4">
+              <SignInButton mode="modal">
+                <button className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+                  Ingresar
+                </button>
+              </SignInButton>
+              <Link href="/sign-up" className="px-6 py-3 bg-white text-slate-950 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-xl shadow-white/5 active:scale-95">
+                Unirse
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center gap-6">
+              <Link href="/pos" className="hidden md:flex items-center gap-2 group">
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-black uppercase tracking-tighter text-indigo-400">Panel de Control</span>
+                  <span className="text-[9px] font-bold text-slate-500">ADMINISTRADOR</span>
+                </div>
+                <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 group-hover:border-indigo-500/50 transition-all">
+                  <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
+                </div>
+              </Link>
+              <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "w-10 h-10 rounded-xl border border-white/10" } }} />
+            </div>
           )}
-          <div className="relative p-2 bg-slate-900 rounded-full border border-slate-800 hover:bg-slate-800 transition-colors">
-            <ShoppingBag className="w-5 h-5 text-slate-300" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-500 rounded-full text-[10px] flex items-center justify-center font-bold">0</span>
-          </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6 relative overflow-hidden">
-        <div className="absolute top-20 right-0 w-96 h-96 bg-indigo-600/10 rounded-full blur-[100px]" />
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-8">
+      {/* Hero Section - Cinematic Presence */}
+      <section className="relative pt-48 pb-32 px-6 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full opacity-30 pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px]" />
+          <div className="absolute top-1/2 right-1/4 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px]" />
+        </div>
+
+        <div className="max-w-7xl mx-auto text-center relative z-10">
+          <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 mb-8 animate-fade-in">
             <Sparkles className="w-4 h-4 text-indigo-400" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Inventario Sincronizado en Tiempo Real</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-300">Sincronización Durango-Digital Activa</span>
           </div>
-          <h1 className="text-5xl md:text-8xl font-outfit font-bold mb-6 tracking-tight">
-            Cultura & Grano <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 leading-tight">
-              Nexus Durango
+
+          <h1 className="text-6xl md:text-9xl font-outfit font-black mb-8 tracking-tighter italic leading-none">
+            CULTURA & <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+              GRANO NEURAL
             </span>
           </h1>
-          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 font-medium">
-            Libros, juegos de mesa y café de especialidad. Todo lo que amas de Tinta y Café, directamente en tu puerta.
+
+          <p className="text-slate-400 text-xl md:text-2xl max-w-3xl mx-auto mb-12 font-medium leading-relaxed">
+            Más que una cafetería, un refugio para la mente. Libros seleccionados, café de especialidad y estrategias en mesa en el corazón de Durango.
           </p>
-        </div>
-      </section>
 
-      {/* Product Grid */}
-      <section className="px-6 pb-32 max-w-7xl mx-auto">
-        <div className="flex justify-between items-end mb-12">
-          <div>
-            <h2 className="text-3xl font-outfit font-bold">Explora el Catálogo</h2>
-            <div className="h-1 w-20 bg-indigo-500 mt-2 rounded-full" />
-          </div>
-          <Link href="/catalog" className="text-indigo-400 flex items-center gap-2 font-bold text-sm group">
-            Ver todo <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <div key={product.id} className="group relative bg-slate-900/50 border border-slate-800 rounded-[2rem] p-4 hover:border-indigo-500/30 transition-all hover:translate-y-[-4px]">
-              <div className="aspect-square bg-slate-950 rounded-[1.5rem] mb-6 overflow-hidden relative flex items-center justify-center border border-slate-900">
-                {product.type === 'book' ? (
-                  <Book className="w-16 h-16 text-indigo-800 opacity-50" />
-                ) : (
-                  <Coffee className="w-16 h-16 text-purple-800 opacity-50" />
-                )}
-                {/* Out of stock badge logic could go here */}
-              </div>
-
-              <div className="space-y-1 px-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{product.type === 'book' ? 'Librería' : 'Cafetería'}</span>
-                <h3 className="text-lg font-bold text-slate-100 group-hover:text-white transition-colors line-clamp-1">{product.name}</h3>
-                <div className="flex justify-between items-center pt-4">
-                  <p className="text-2xl font-outfit font-bold text-indigo-400">${product.price}</p>
-                  <button className="p-3 bg-white text-slate-950 rounded-2xl hover:bg-slate-200 transition-all flex items-center justify-center">
-                    <Plus className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* AI Experience Banner */}
-      <section className="px-6 pb-32 max-w-7xl mx-auto">
-        <div className="bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border border-indigo-500/20 rounded-[3rem] p-12 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px]" />
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
-            <div className="text-left max-w-xl">
-              <div className="flex items-center gap-2 mb-6">
-                <Zap className="w-6 h-6 text-indigo-400 fill-indigo-400" />
-                <span className="text-sm font-bold uppercase tracking-widest text-indigo-300">Powered by Neural Nexus</span>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-outfit font-bold mb-6">Tu Asistente de Lectura IA</h2>
-              <p className="text-slate-300 text-lg mb-8 leading-relaxed">
-                Nuestra red neuronal analiza tus gustos en café y lecturas pasadas para recomendarte tu próxima gran historia.
-              </p>
-              <button className="px-8 py-4 bg-indigo-600 rounded-2xl font-bold flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20">
-                Iniciar Conversación <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="relative w-full max-w-xs aspect-square bg-slate-950 rounded-[2.5rem] border border-slate-800 flex items-center justify-center p-8 group-hover:scale-[1.02] transition-transform">
-              <Sparkles className="w-32 h-32 text-indigo-500/30 animate-pulse" />
-            </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="#catalogo" className="w-full sm:w-auto px-10 py-5 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-indigo-600 hover:text-white transition-all shadow-2xl active:scale-95">
+              Explorar Catálogo <ArrowRight className="w-4 h-4" />
+            </a>
+            <a href="#comunidad" className="w-full sm:w-auto px-10 py-5 bg-slate-900/50 border border-slate-800 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-slate-800 transition-all backdrop-blur-xl">
+              Unirse al Nexus <Users className="w-4 h-4 text-indigo-400" />
+            </a>
           </div>
         </div>
       </section>
 
-      <footer className="py-12 px-6 border-t border-slate-900 text-center">
-        <p className="text-slate-500 text-sm font-medium">© 2026 Tinta y Café. Sincronicidad Durango-Digital.</p>
+      {/* Info Sections - The Pillars */}
+      <section className="px-6 py-32 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12">
+        {[
+          {
+            title: "Cafetería de Especialidad",
+            desc: "Granos de altura trazables directamente del productor. Una experiencia de extracción calibrada para paladares exigentes.",
+            icon: <Coffee className="w-8 h-8 text-indigo-400" />,
+            color: "from-indigo-600/20 to-indigo-900/10"
+          },
+          {
+            title: "La Librería Curada",
+            desc: "Desde clásicos universales hasta narrativa contemporánea y editoriales independientes. El maridaje perfecto para tu café.",
+            icon: <Book className="w-8 h-8 text-purple-400" />,
+            color: "from-purple-600/20 to-purple-900/10"
+          },
+          {
+            title: "Mesa & Estrategia",
+            desc: "Un catálogo de juegos de mesa para desafiar tu mente mientras disfrutas de nuestro ambiente único y acogedor.",
+            icon: <Gamepad2 className="w-8 h-8 text-pink-400" />,
+            color: "from-pink-600/20 to-pink-900/10"
+          }
+        ].map((pillar, i) => (
+          <div key={i} className={`p-10 rounded-[3rem] bg-gradient-to-br ${pillar.color} border border-white/5 flex flex-col items-start gap-6 group hover:translate-y-[-4px] transition-all duration-500`}>
+            <div className="p-4 bg-slate-950 rounded-2xl border border-white/10 group-hover:scale-110 transition-transform">
+              {pillar.icon}
+            </div>
+            <h3 className="text-2xl font-outfit font-black text-white italic tracking-tight uppercase leading-none">{pillar.title}</h3>
+            <p className="text-slate-400 font-medium leading-relaxed">{pillar.desc}</p>
+          </div>
+        ))}
+      </section>
+
+      {/* Interactive Catalog Section */}
+      <section id="catalogo" className="px-6 py-32 bg-slate-950">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-20 text-left">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-10 h-[1px] bg-indigo-500" />
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-400">Sincronización Real</span>
+              </div>
+              <h2 className="text-5xl md:text-6xl font-outfit font-black text-white tracking-tighter italic">SHOP VIRTUAL</h2>
+            </div>
+            <p className="text-slate-500 text-sm max-w-xs font-bold uppercase tracking-widest text-right">
+              Inventario compartido entre el espacio físico y digital.
+            </p>
+          </div>
+
+          <ClientShop initialProducts={products} />
+        </div>
+      </section>
+
+      {/* Loyalty Registration Section */}
+      <section id="comunidad" className="px-6 py-32 relative">
+        <div className="absolute inset-0 bg-indigo-600/[0.02] -z-10" />
+        <div className="max-w-7xl mx-auto">
+          <JoinLoyalty />
+        </div>
+      </section>
+
+      {/* Location / Contact */}
+      <section className="px-6 py-32 border-t border-white/5">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
+          <div className="flex-1 space-y-8 text-left">
+            <h2 className="text-5xl font-outfit font-black text-white tracking-tight italic">ENCUÉNTRANOS EN EL CORAZÓN DE DURANGO</h2>
+            <p className="text-slate-400 text-lg leading-relaxed font-medium">
+              Ven a vivir la experiencia completa. Estamos ubicados en el centro histórico, listos para recibirte con el aroma del café recién molido y las mejores historias.
+            </p>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4 text-white">
+                <MapPin className="w-6 h-6 text-indigo-500" />
+                <span className="font-bold">Calle Constitución #123, Centro Histórico, Durango, Dgo.</span>
+              </div>
+              <div className="flex items-center gap-4 text-white">
+                <Zap className="w-6 h-6 text-purple-500" />
+                <span className="font-bold">Abierto todos los días de 8:00 AM a 10:00 PM</span>
+              </div>
+            </div>
+          </div>
+          <div className="w-full md:w-1/2 aspect-video bg-slate-900/50 rounded-[3rem] border border-slate-800 flex items-center justify-center relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10" />
+            <MapPin className="w-16 h-16 text-indigo-500/30 group-hover:scale-125 transition-transform" />
+            <div className="absolute bottom-10 left-10 p-4 bg-slate-950/80 backdrop-blur-md rounded-2xl border border-white/5">
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Ver en Google Maps</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="py-12 px-6 border-t border-white/5 text-center">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <span className="font-outfit font-black text-lg tracking-tight">TINTA Y CAFÉ</span>
+        </div>
+        <p className="text-slate-600 text-[10px] font-bold uppercase tracking-[0.4em]">© 2026 Sincronicidad Durango-Digital. Todos los derechos reservados.</p>
       </footer>
     </div>
   );

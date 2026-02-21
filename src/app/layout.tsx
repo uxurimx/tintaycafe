@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
+import { Toaster } from "sonner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,6 +31,7 @@ export default function RootLayout({
       <html lang="es">
         <body className={`${inter.variable} ${outfit.variable} antialiased font-sans bg-slate-950 text-slate-50`}>
           {children}
+          <Toaster position="bottom-right" theme="dark" richColors />
         </body>
       </html>
     </ClerkProvider>

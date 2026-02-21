@@ -31,6 +31,9 @@ export const items = pgTable('items', {
     imageUrl: text('image_url'),
     metadata: text('metadata'), // AI generated metadata (JSON string)
     price: doublePrecision('price').notNull().default(0),
+    costPrice: doublePrecision('cost_price').default(0),
+    unit: varchar('unit', { length: 50 }), // kg, liter, piece, etc.
+    supplierId: integer('supplier_id').references(() => suppliers.id),
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -72,6 +75,7 @@ export const transactions = pgTable('transactions', {
     customerId: integer('customer_id').references(() => customers.id),
     total: doublePrecision('total').notNull(),
     type: varchar('type', { length: 50 }).notNull().default('sale'), // 'sale', 'transfer', 'restock'
+    supplierId: integer('supplier_id').references(() => suppliers.id),
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -81,6 +85,17 @@ export const transactionItems = pgTable('transaction_items', {
     itemId: integer('item_id').references(() => items.id).notNull(),
     quantity: doublePrecision('quantity').notNull(),
     price: doublePrecision('price').notNull(),
+});
+
+// Suppliers: Entity providing raw materials
+export const suppliers = pgTable('suppliers', {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    contact: text('contact'),
+    email: text('email'),
+    phone: varchar('phone', { length: 20 }),
+    address: text('address'),
+    createdAt: timestamp('created_at').defaultNow(),
 });
 
 // Customers & Loyalty (Quantum Points)
@@ -119,4 +134,9 @@ export const transactionItemRelations = relations(transactionItems, ({ one }) =>
 export const userRelations = relations(users, ({ one, many }) => ({
     store: one(stores, { fields: [users.storeId], references: [stores.id] }),
     transactions: many(transactions),
+}));
+
+export const supplierRelations = relations(suppliers, ({ many }) => ({
+    items: many(items),
+    restocks: many(transactions),
 }));

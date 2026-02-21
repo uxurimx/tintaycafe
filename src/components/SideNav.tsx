@@ -14,7 +14,9 @@ import { UserButton, useUser } from "@clerk/nextjs";
 
 const navItems = [
     { name: "Inventario", href: "/inventory", icon: Package },
+    { name: "Carta / Menú", href: "/menu", icon: Coffee },
     { name: "Punto de Venta", href: "/pos", icon: ShoppingCart },
+    { name: "Proveedores", href: "/suppliers", icon: Users }, // Reusing Users icon or similar
     { name: "Clientes", href: "/customers", icon: Users },
     { name: "Configuración", href: "/settings", icon: Settings },
 ];

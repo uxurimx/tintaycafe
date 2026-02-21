@@ -54,20 +54,26 @@ interface InventoryItem {
     categoryId: number | null;
     storeId: number;
     minStock: number;
+    costPrice?: number;
+    unit?: string;
+    supplierId?: number | null;
 }
 
 export default function InventoryList({
     initialItems = [],
     initialCategories = [],
-    initialStores = []
+    initialStores = [],
+    initialSuppliers = []
 }: {
     initialItems: InventoryItem[],
     initialCategories: Category[],
-    initialStores: StoreType[]
+    initialStores: StoreType[],
+    initialSuppliers?: any[]
 }) {
     const [items, setItems] = useState(initialItems);
     const [categories, setCategories] = useState(initialCategories);
     const [stores, setStores] = useState(initialStores);
+    const [suppliers, setSuppliers] = useState(initialSuppliers);
 
     // Sync state with server-side props when they change (e.g. after revalidatePath)
     useEffect(() => {
@@ -81,6 +87,10 @@ export default function InventoryList({
     useEffect(() => {
         setStores(initialStores);
     }, [initialStores]);
+
+    useEffect(() => {
+        setSuppliers(initialSuppliers);
+    }, [initialSuppliers]);
 
     const [activeCategory, setActiveCategory] = useState('all');
     const [activeStore, setActiveStore] = useState('all');
@@ -321,12 +331,11 @@ export default function InventoryList({
 
             {/* Unified Modal System */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-3xl bg-slate-950/80 animate-fade-in text-left">
-                    <div className="relative bg-slate-950 border border-white/5 rounded-[3.5rem] w-full max-w-2xl p-12 shadow-[0_0_100px_rgba(79,70,229,0.1)] overflow-hidden">
-                        {/* Glow decor */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px] -z-10" />
-
-                        <div className="flex justify-between items-center mb-10">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-3xl bg-slate-950/80 animate-fade-in">
+                    <div className="bg-slate-950 border border-white/5 rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-[0_0_100px_rgba(79,70,229,0.1)] overflow-hidden">
+                        <div className="p-8 border-b border-white/5 flex justify-between items-center shrink-0 relative">
+                            {/* Glow decor (moved inside) */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-[100px] -z-10" />
                             <div>
                                 <h3 className="text-4xl font-outfit font-black tracking-tighter text-white uppercase italic">
                                     {modalType === 'item' ? (isEditMode ? "Modificar" : "Inyectar") :
@@ -342,180 +351,205 @@ export default function InventoryList({
                             </button>
                         </div>
 
-                        {/* ITEM MODAL */}
-                        {modalType === 'item' && (
-                            <form action={async (formData) => {
-                                if (isEditMode && selectedItem) {
-                                    let sid = parseInt(formData.get("storeId") as string) || selectedItem.storeId;
-                                    const res = await updateInventoryItem(selectedItem.id, sid, {
-                                        name: formData.get("name") as string,
-                                        quantity: parseFloat(formData.get("quantity") as string),
-                                        categoryId: formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null
-                                    });
-                                    if (res.success && res.data) {
-                                        setItems(prev => prev.map(i => i.uId === res.data.uId ? { ...i, ...res.data } : i));
-                                    }
-                                } else {
-                                    const res = await addInventoryItem(formData);
-                                    if (res.success && res.data) {
-                                        setItems(prev => [...prev, res.data as any]);
-                                    }
-                                }
-                                setIsModalOpen(false);
-                            }} className="grid grid-cols-2 gap-8">
-                                <div className="col-span-2 space-y-2">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre Descriptivo</label>
-                                    <input name="name" defaultValue={isEditMode ? selectedItem?.name : ""} required className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none focus:border-indigo-500 transition-all font-medium shadow-inner" placeholder="P Ej. Specialty Beans / Catan" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Barcode Sincro</label>
-                                    <input name="barcode" defaultValue={isEditMode ? selectedItem?.barcode : ""} readOnly={isEditMode} className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white font-mono focus:outline-none placeholder:text-slate-700" placeholder="000-000-000" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Clasificación</label>
-                                    <select name="categoryId" className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
-                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock Inicial</label>
-                                    <input name="quantity" type="number" defaultValue={isEditMode ? selectedItem?.quantity : "0"} required className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nodo Destino</label>
-                                    <select name="storeId" className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
-                                        {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                    </select>
-                                </div>
-                                <input type="hidden" name="type" value="product" />
-                                <button type="submit" className="col-span-2 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-600/30 transition-all active:scale-95">
-                                    {isEditMode ? "Actualizar Memoria" : "Sincronizar a la Red"}
-                                </button>
-                            </form>
-                        )}
+                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
 
-                        {/* TRANSFER MODAL */}
-                        {modalType === 'transfer' && selectedItem && (
-                            <form action={async (formData) => {
-                                await transferStock(
-                                    selectedItem.id,
-                                    parseInt(formData.get("from") as string),
-                                    parseInt(formData.get("to") as string),
-                                    parseFloat(formData.get("qty") as string)
-                                );
-                                setIsModalOpen(false);
-                            }} className="space-y-8">
-                                <div className="p-6 bg-slate-900/50 border border-indigo-500/20 rounded-3xl flex items-center gap-6">
-                                    <div className="p-4 bg-indigo-600 rounded-2xl">
-                                        <Package className="w-8 h-8" />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xl font-bold text-white">{selectedItem.name}</h4>
-                                        <p className="text-indigo-400 text-xs font-black uppercase tracking-widest">En red: {selectedItem.quantity} unidades</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-8 items-end">
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Origen</label>
-                                        <select name="from" className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
-                                            {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Destino</label>
-                                        <select name="to" className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
-                                            {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </select>
-                                    </div>
+                            {/* ITEM MODAL */}
+                            {modalType === 'item' && (
+                                <form action={async (formData) => {
+                                    if (isEditMode && selectedItem) {
+                                        let sid = parseInt(formData.get("storeId") as string) || selectedItem.storeId;
+                                        const res = await updateInventoryItem(selectedItem.id, sid, {
+                                            name: formData.get("name") as string,
+                                            quantity: parseFloat(formData.get("quantity") as string),
+                                            categoryId: formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null
+                                        });
+                                        if (res.success && res.data) {
+                                            setItems(prev => prev.map(i => i.uId === res.data.uId ? { ...i, ...res.data } : i));
+                                        }
+                                    } else {
+                                        const res = await addInventoryItem(formData);
+                                        if (res.success && res.data) {
+                                            setItems(prev => [...prev, res.data as any]);
+                                        }
+                                    }
+                                    setIsModalOpen(false);
+                                }} className="grid grid-cols-2 gap-8">
                                     <div className="col-span-2 space-y-2">
-                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Cantidad a Mover</label>
-                                        <input name="qty" type="number" required className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none text-2xl font-black text-center" placeholder="0.00" />
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre Descriptivo</label>
+                                        <input name="name" defaultValue={isEditMode ? selectedItem?.name : ""} required className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none focus:border-indigo-500 transition-all font-medium shadow-inner" placeholder="P Ej. Specialty Beans / Catan" />
                                     </div>
-                                </div>
-
-                                <button type="submit" className="w-full py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-600/20">
-                                    Ejecutar Tele-Transporte
-                                </button>
-                            </form>
-                        )}
-
-                        {/* CATEGORY MANAGEMENT */}
-                        {modalType === 'category' && (
-                            <div className="space-y-10">
-                                <form action={async (formData) => {
-                                    await createCategory(formData.get("name") as string, formData.get("icon") as string);
-                                    setIsModalOpen(false);
-                                }} className="flex gap-4">
-                                    <input name="name" required className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none" placeholder="Nueva Categoría... (Ej. Galletas)" />
-                                    <select name="icon" className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none">
-                                        <option value="Package">Genérico</option>
-                                        <option value="BookOpen">Libro</option>
-                                        <option value="Coffee">Grano</option>
-                                        <option value="Beer">Frío</option>
-                                    </select>
-                                    <button type="submit" className="px-8 bg-indigo-600 rounded-2xl font-bold">Crear</button>
-                                </form>
-
-                                <div className="space-y-3">
-                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Existentes en Red</h4>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {categories.map(c => (
-                                            <div key={c.id} className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex justify-between items-center">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="text-indigo-400">{getIcon(c.icon)}</div>
-                                                    <span className="text-white font-bold">{c.name}</span>
-                                                </div>
-                                                <button onClick={async () => { await deleteCategory(c.id); setIsModalOpen(false); }} className="text-slate-600 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* STORE MANAGEMENT */}
-                        {modalType === 'store' && (
-                            <div className="space-y-10">
-                                <form action={async (formData) => {
-                                    await createStore(formData.get("name") as string, formData.get("type") as any, formData.get("address") as string);
-                                    setIsModalOpen(false);
-                                }} className="grid grid-cols-2 gap-4">
-                                    <input name="name" required className="col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none" placeholder="Nombre Sucursal..." />
-                                    <select name="type" className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none">
-                                        <option value="stable">Fija</option>
-                                        <option value="informal">Punto Informal</option>
-                                    </select>
-                                    <input name="address" className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none" placeholder="Dirección..." />
-                                    <button type="submit" className="col-span-2 py-4 bg-indigo-600 rounded-2xl font-bold">Añadir Sucursal</button>
-                                </form>
-
-                                <div className="space-y-3">
-                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mapa de Sucursales</h4>
                                     <div className="space-y-2">
-                                        {stores.map(s => (
-                                            <div
-                                                key={s.id}
-                                                onClick={() => handleViewStore(s.id)}
-                                                className="p-5 bg-slate-900 border border-slate-800 rounded-3xl flex justify-between items-center group cursor-pointer hover:border-indigo-500/50 transition-all active:scale-[0.98]"
-                                            >
-                                                <div>
-                                                    <p className="text-white font-black uppercase tracking-tight group-hover:text-indigo-400 transition-colors">{s.name}</p>
-                                                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{s.type} | ID_{s.id}</p>
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Barcode Sincro</label>
+                                        <input name="barcode" defaultValue={isEditMode ? selectedItem?.barcode : ""} readOnly={isEditMode} className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white font-mono focus:outline-none placeholder:text-slate-700" placeholder="000-000-000" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Clasificación</label>
+                                        <select name="categoryId" className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
+                                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Stock Inicial</label>
+                                        <input name="quantity" type="number" step="0.01" defaultValue={isEditMode ? selectedItem?.quantity : "0"} required className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Unidad de Medida</label>
+                                        <select name="unit" defaultValue={isEditMode ? selectedItem?.unit : "pieza"} className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
+                                            <option value="kg">Kilogramos</option>
+                                            <option value="g">Gramos</option>
+                                            <option value="l">Litros</option>
+                                            <option value="ml">Mililitros</option>
+                                            <option value="pieza">Piezas</option>
+                                            <option value="caja">Cajas</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Precio de Costo</label>
+                                        <input name="costPrice" type="number" step="0.01" defaultValue={isEditMode ? selectedItem?.costPrice : "0"} className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none" placeholder="$0.00" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Proveedor Aliado</label>
+                                        <select name="supplierId" defaultValue={isEditMode ? (selectedItem?.supplierId || "") : ""} className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
+                                            <option value="">Seleccionar Proveedor</option>
+                                            {suppliers.map(sup => <option key={sup.id} value={sup.id}>{sup.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nodo Destino</label>
+                                        <select name="storeId" className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
+                                            {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <input type="hidden" name="type" value="insumo" />
+                                    <button type="submit" className="col-span-2 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-600/30 transition-all active:scale-95">
+                                        {isEditMode ? "Actualizar Memoria" : "Sincronizar a la Red"}
+                                    </button>
+                                </form>
+                            )}
+
+                            {/* TRANSFER MODAL */}
+                            {modalType === 'transfer' && selectedItem && (
+                                <form action={async (formData) => {
+                                    await transferStock(
+                                        selectedItem.id,
+                                        parseInt(formData.get("from") as string),
+                                        parseInt(formData.get("to") as string),
+                                        parseFloat(formData.get("qty") as string)
+                                    );
+                                    setIsModalOpen(false);
+                                }} className="space-y-8">
+                                    <div className="p-6 bg-slate-900/50 border border-indigo-500/20 rounded-3xl flex items-center gap-6">
+                                        <div className="p-4 bg-indigo-600 rounded-2xl">
+                                            <Package className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xl font-bold text-white">{selectedItem.name}</h4>
+                                            <p className="text-indigo-400 text-xs font-black uppercase tracking-widest">En red: {selectedItem.quantity} unidades</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-8 items-end">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Origen</label>
+                                            <select name="from" className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
+                                                {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Destino</label>
+                                            <select name="to" className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
+                                                {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Cantidad a Mover</label>
+                                            <input name="qty" type="number" required className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none text-2xl font-black text-center" placeholder="0.00" />
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" className="w-full py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-600/20">
+                                        Ejecutar Tele-Transporte
+                                    </button>
+                                </form>
+                            )}
+
+                            {/* CATEGORY MANAGEMENT */}
+                            {modalType === 'category' && (
+                                <div className="space-y-10">
+                                    <form action={async (formData) => {
+                                        await createCategory(formData.get("name") as string, formData.get("icon") as string);
+                                        setIsModalOpen(false);
+                                    }} className="flex gap-4">
+                                        <input name="name" required className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none" placeholder="Nueva Categoría... (Ej. Galletas)" />
+                                        <select name="icon" className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none">
+                                            <option value="Package">Genérico</option>
+                                            <option value="BookOpen">Libro</option>
+                                            <option value="Coffee">Grano</option>
+                                            <option value="Beer">Frío</option>
+                                        </select>
+                                        <button type="submit" className="px-8 bg-indigo-600 rounded-2xl font-bold">Crear</button>
+                                    </form>
+
+                                    <div className="space-y-3">
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Existentes en Red</h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {categories.map(c => (
+                                                <div key={c.id} className="p-4 bg-slate-900 border border-slate-800 rounded-2xl flex justify-between items-center">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="text-indigo-400">{getIcon(c.icon)}</div>
+                                                        <span className="text-white font-bold">{c.name}</span>
+                                                    </div>
+                                                    <button onClick={async () => { await deleteCategory(c.id); setIsModalOpen(false); }} className="text-slate-600 hover:text-rose-500"><Trash2 className="w-4 h-4" /></button>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    {isLoadingAnalytics ? (
-                                                        <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
-                                                    ) : (
-                                                        <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)] group-hover:scale-150 transition-transform" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+
+                            {/* STORE MANAGEMENT */}
+                            {modalType === 'store' && (
+                                <div className="space-y-10">
+                                    <form action={async (formData) => {
+                                        await createStore(formData.get("name") as string, formData.get("type") as any, formData.get("address") as string);
+                                        setIsModalOpen(false);
+                                    }} className="grid grid-cols-2 gap-4">
+                                        <input name="name" required className="col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none" placeholder="Nombre Sucursal..." />
+                                        <select name="type" className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none">
+                                            <option value="stable">Fija</option>
+                                            <option value="informal">Punto Informal</option>
+                                        </select>
+                                        <input name="address" className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none" placeholder="Dirección..." />
+                                        <button type="submit" className="col-span-2 py-4 bg-indigo-600 rounded-2xl font-bold">Añadir Sucursal</button>
+                                    </form>
+
+                                    <div className="space-y-3">
+                                        <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mapa de Sucursales</h4>
+                                        <div className="space-y-2">
+                                            {stores.map(s => (
+                                                <div
+                                                    key={s.id}
+                                                    onClick={() => handleViewStore(s.id)}
+                                                    className="p-5 bg-slate-900 border border-slate-800 rounded-3xl flex justify-between items-center group cursor-pointer hover:border-indigo-500/50 transition-all active:scale-[0.98]"
+                                                >
+                                                    <div>
+                                                        <p className="text-white font-black uppercase tracking-tight group-hover:text-indigo-400 transition-colors">{s.name}</p>
+                                                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">{s.type} | ID_{s.id}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        {isLoadingAnalytics ? (
+                                                            <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                                                        ) : (
+                                                            <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)] group-hover:scale-150 transition-transform" />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
