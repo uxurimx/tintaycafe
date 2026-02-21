@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
     ShoppingCart,
     Search,
@@ -8,15 +9,25 @@ import {
     Minus,
     Trash2,
     User,
-    CreditCard,
     Zap,
     Sparkles,
     Package,
     ArrowRight,
-    CheckCircle2
+    Coffee,
+    CheckCircle
 } from "lucide-react";
 import { processSale } from "@/app/api/pos/actions";
-import { toast } from "sonner"; // Assuming sonner is available or will be added
+import { updateTransactionStatus } from "@/app/api/checkout/actions";
+import { toast } from "sonner";
+
+interface ActiveOrder {
+    id: number;
+    total: number;
+    status: string;
+    createdAt: Date | null;
+    customerName: string;
+    items: { name: string; quantity: number; price: number }[];
+}
 
 interface POSItem {
     id: number;
@@ -41,13 +52,17 @@ interface Customer {
 export default function QuantumPOS({
     initialItems,
     initialCustomers,
-    initialStoreId
+    initialStoreId,
+    initialActiveOrders = []
 }: {
     initialItems: POSItem[];
     initialCustomers: Customer[];
     initialStoreId: number;
+    initialActiveOrders?: ActiveOrder[];
 }) {
+    const router = useRouter();
     const [items, setItems] = useState<POSItem[]>(initialItems);
+    const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>(initialActiveOrders);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
@@ -149,6 +164,21 @@ export default function QuantumPOS({
             toast.error("Error al procesar la venta");
         } finally {
             setIsProcessing(false);
+        }
+    };
+
+    const handleOrderStatusChange = async (orderId: number, newStatus: string) => {
+        try {
+            await updateTransactionStatus(orderId, newStatus);
+            setActiveOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, status: newStatus } : o
+            ).filter(o => o.status !== 'ready' && o.status !== 'completed'));
+            router.refresh();
+            if (newStatus === 'ready') {
+                toast.success("Orden marcada como lista para recoger");
+            }
+        } catch {
+            toast.error("Error al actualizar la orden");
         }
     };
 
@@ -302,6 +332,59 @@ export default function QuantumPOS({
                         </button>
                     </div>
                 </div>
+
+                {/* Active Orders Panel */}
+                {activeOrders.length > 0 && (
+                    <div className="bg-slate-900/60 border border-slate-700 rounded-[2rem] overflow-hidden">
+                        <div className="p-4 border-b border-slate-800 flex items-center gap-2">
+                            <Coffee className="w-4 h-4 text-indigo-400" />
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                                Órdenes Web ({activeOrders.length})
+                            </h3>
+                        </div>
+                        <div className="p-4 space-y-3 max-h-48 overflow-y-auto">
+                            {activeOrders.map(order => (
+                                <div key={order.id} className="p-3 bg-slate-950/80 rounded-xl border border-slate-800">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <p className="text-xs font-bold text-white">#{order.id} · {order.customerName}</p>
+                                            <p className="text-[10px] text-slate-500">
+                                                {order.items.map(i => `${i.name} x${i.quantity}`).join(", ")}
+                                            </p>
+                                        </div>
+                                        <span className="text-sm font-black text-indigo-400">${order.total?.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {order.status === 'preparing' && (
+                                            <button
+                                                onClick={() => handleOrderStatusChange(order.id, 'ready')}
+                                                className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1"
+                                            >
+                                                <CheckCircle className="w-3 h-3" /> Listo
+                                            </button>
+                                        )}
+                                        {order.status === 'pending' && (
+                                            <>
+                                                <button
+                                                    onClick={() => handleOrderStatusChange(order.id, 'preparing')}
+                                                    className="flex-1 py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1"
+                                                >
+                                                    <Coffee className="w-3 h-3" /> Preparar
+                                                </button>
+                                                <button
+                                                    onClick={() => handleOrderStatusChange(order.id, 'ready')}
+                                                    className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1"
+                                                >
+                                                    <CheckCircle className="w-3 h-3" /> Listo
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* AI Insight Placeholder */}
                 <div className="bg-gradient-to-br from-indigo-600/10 to-purple-600/10 border border-indigo-500/20 rounded-[2rem] p-6 flex flex-col gap-3 relative overflow-hidden group">

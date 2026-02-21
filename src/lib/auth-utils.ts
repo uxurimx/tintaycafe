@@ -50,6 +50,15 @@ export async function protectAdmin() {
     return { role };
 }
 
+/** Only owner and admin - for sensitive operations like role management */
+export async function protectOwnerAdmin() {
+    const role = await getUserRole();
+    if (role !== 'owner' && role !== 'admin') {
+        redirect("/me");
+    }
+    return { role };
+}
+
 export async function protectStaff() {
     const role = await getUserRole();
     const isStaff = ['owner', 'admin', 'employee', 'kitchen'].includes(role);

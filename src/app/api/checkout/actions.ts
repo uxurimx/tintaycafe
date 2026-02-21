@@ -5,7 +5,7 @@ import { transactions, inventory, customers, transactionItems } from "@/db/schem
 import { pusherServer } from "@/lib/pusher/server";
 import { revalidatePath } from "next/cache";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, inArray, asc } from "drizzle-orm";
 
 export async function processWebSale(data: {
     items: {
@@ -105,6 +105,36 @@ export async function processWebSale(data: {
 
         return { success: true, transactionId: newTransaction.id };
     });
+}
+
+export async function getActiveOrders(storeId: number) {
+    const orders = await db.query.transactions.findMany({
+        where: and(
+            eq(transactions.storeId, storeId),
+            eq(transactions.type, 'sale'),
+            inArray(transactions.status, ['pending', 'preparing'])
+        ),
+        orderBy: [asc(transactions.createdAt)],
+        with: {
+            customer: true,
+            items: {
+                with: { item: true }
+            }
+        }
+    });
+
+    return orders.map(t => ({
+        id: t.id,
+        total: t.total,
+        status: t.status,
+        createdAt: t.createdAt,
+        customerName: t.customer?.name ?? 'Cliente',
+        items: t.items.map(ti => ({
+            name: ti.item.name,
+            quantity: ti.quantity,
+            price: ti.price
+        }))
+    }));
 }
 
 export async function updateTransactionStatus(transactionId: number, status: string) {

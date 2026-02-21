@@ -3,12 +3,14 @@ import { items, inventory, categories, customers, stores } from "@/db/schema";
 import QuantumPOS from "@/components/QuantumPOS";
 import { eq, gt } from "drizzle-orm";
 import { protectStaff } from "@/lib/auth-utils";
+import { getActiveOrders } from "@/app/api/checkout/actions";
 
 export default async function POSPage() {
     await protectStaff();
     let displayItems = [];
     let dbCustomers = [];
     let defaultStoreId = 1;
+    let activeOrders: Awaited<ReturnType<typeof getActiveOrders>> = [];
 
     try {
         // 1. Fetch Items with stock > 0
@@ -35,6 +37,9 @@ export default async function POSPage() {
         const store = await db.query.stores.findFirst();
         if (store) defaultStoreId = store.id;
 
+        // 4. Fetch active web orders for this store
+        activeOrders = await getActiveOrders(defaultStoreId);
+
     } catch (e) {
         console.error("POS Data fetch failed:", e);
         // Fallback mock data
@@ -52,6 +57,7 @@ export default async function POSPage() {
                     initialItems={displayItems}
                     initialCustomers={dbCustomers}
                     initialStoreId={defaultStoreId}
+                    initialActiveOrders={activeOrders}
                 />
             </div>
         </div>

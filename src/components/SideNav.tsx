@@ -9,12 +9,14 @@ import {
     Users,
     Settings,
     ChevronRight,
-    UserPlus
+    UserPlus,
+    Shield
 } from "lucide-react";
 import { UserButton, useUser } from "@clerk/nextjs";
 
 const navItems = [
     { name: "Mi Perfil", href: "/me", icon: UserPlus, roles: ['admin', 'owner', 'employee', 'kitchen', 'customer'] },
+    { name: "Usuarios", href: "/users", icon: Shield, roles: ['admin', 'owner'] },
     { name: "Inventario", href: "/inventory", icon: Package, roles: ['admin', 'owner', 'employee'] },
     { name: "Carta / Menú", href: "/menu", icon: Coffee, roles: ['admin', 'owner', 'employee', 'kitchen'] },
     { name: "Punto de Venta", href: "/pos", icon: ShoppingCart, roles: ['admin', 'owner', 'employee'] },
