@@ -2,8 +2,10 @@ import { db } from "@/db";
 import { suppliers } from "@/db/schema";
 import SupplierManager from "@/components/SupplierManager";
 import { desc } from "drizzle-orm";
+import { protectAdmin } from "@/lib/auth-utils";
 
 export default async function SuppliersPage() {
+    await protectAdmin();
     let dbSuppliers = [];
 
     try {

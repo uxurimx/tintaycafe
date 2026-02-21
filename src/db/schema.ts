@@ -62,7 +62,7 @@ export const users = pgTable('users', {
     id: text('id').primaryKey(), // Clerk ID
     email: text('email').notNull(),
     name: text('name').notNull(),
-    role: varchar('role', { length: 50 }).notNull().default('employee'), // 'owner', 'employee', 'admin'
+    role: varchar('role', { length: 50 }).notNull().default('customer'), // 'owner', 'employee', 'admin', 'kitchen', 'customer'
     storeId: integer('store_id').references(() => stores.id),
     createdAt: timestamp('created_at').defaultNow(),
 });
@@ -115,9 +115,10 @@ export const storeRelations = relations(stores, ({ many }) => ({
     transactions: many(transactions),
 }));
 
-export const itemRelations = relations(items, ({ many }) => ({
+export const itemRelations = relations(items, ({ one, many }) => ({
     inventory: many(inventory),
     recipes: many(recipes),
+    category: one(categories, { fields: [items.categoryId], references: [categories.id] }),
 }));
 
 export const transactionRelations = relations(transactions, ({ one, many }) => ({

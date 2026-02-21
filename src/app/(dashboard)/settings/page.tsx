@@ -1,8 +1,10 @@
 import { db } from "@/db";
 import { stores } from "@/db/schema";
 import SettingsContent from "@/components/SettingsContent";
+import { protectAdmin } from "@/lib/auth-utils";
 
 export default async function SettingsPage() {
+    await protectAdmin();
     let dbStores = [];
 
     try {

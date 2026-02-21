@@ -2,8 +2,10 @@ import { db } from "@/db";
 import { customers } from "@/db/schema";
 import CustomerManager from "@/components/CustomerManager";
 import { desc } from "drizzle-orm";
+import { protectAdmin } from "@/lib/auth-utils";
 
 export default async function CustomersPage() {
+    await protectAdmin();
     let dbCustomers = [];
 
     try {

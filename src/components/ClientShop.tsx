@@ -17,6 +17,9 @@ import {
     Zap
 } from "lucide-react";
 import { toast } from "sonner";
+import { processWebSale } from "@/app/api/checkout/actions";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 interface Product {
     id: number;
@@ -35,9 +38,12 @@ interface CartItem extends Product {
 }
 
 export default function ClientShop({ initialProducts }: { initialProducts: Product[] }) {
+    const { user, isLoaded } = useUser();
+    const router = useRouter();
     const [products] = useState<Product[]>(initialProducts);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [activeFilter, setActiveFilter] = useState<'all' | 'coffee' | 'book' | 'game'>('all');
 
@@ -110,17 +116,49 @@ export default function ClientShop({ initialProducts }: { initialProducts: Produ
         toast.info("Producto eliminado del carrito");
     };
 
+    const handleCheckout = async () => {
+        if (!isLoaded) return;
+        if (!user) {
+            toast.error("Debes iniciar sesión para finalizar la compra");
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            const result = await processWebSale({
+                items: cart.map(item => ({
+                    itemId: item.id,
+                    quantity: item.cartQuantity,
+                    price: item.price
+                })),
+                total: cartTotal
+            });
+
+            if (result.success) {
+                toast.success("¡Pedido procesado con éxito!");
+                setCart([]);
+                localStorage.removeItem("tinta-y-cafe-cart");
+                setIsCartOpen(false);
+                router.push("/me");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Error al procesar el pedido");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     return (
         <>
-            {/* Nav Extension - Dynamic Cart Button */}
-            <div className="fixed top-6 right-6 z-[60] flex items-center gap-4">
+            {/* Nav Extension - Dynamic Cart Button - Floating at bottom-right */}
+            <div className="fixed bottom-10 right-10 z-[150] flex items-center gap-4">
                 <button
                     onClick={() => setIsCartOpen(true)}
-                    className="relative p-4 bg-white text-slate-950 rounded-2xl shadow-2xl hover:scale-105 transition-transform group"
+                    className={`relative p-6 rounded-[2rem] shadow-2xl transition-all hover:scale-110 active:scale-95 group ${cartCount > 0 ? 'bg-indigo-600 text-white animate-bounce shadow-indigo-600/40' : 'bg-white text-slate-950 shadow-white/10'}`}
                 >
-                    <ShoppingBag className="w-6 h-6" />
+                    <ShoppingBag className="w-8 h-8" />
                     {cartCount > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full border-4 border-slate-950 shadow-lg group-hover:animate-bounce">
+                        <span className="absolute -top-3 -right-3 bg-white text-indigo-600 text-xs font-black w-8 h-8 flex items-center justify-center rounded-full border-4 border-indigo-600 shadow-xl">
                             {cartCount}
                         </span>
                     )}
@@ -195,7 +233,7 @@ export default function ClientShop({ initialProducts }: { initialProducts: Produ
 
             {/* Sidebar Cart */}
             {isCartOpen && (
-                <div className="fixed inset-0 z-[100] flex justify-end">
+                <div className="fixed inset-0 z-[200] flex justify-end">
                     <div
                         className="absolute inset-0 bg-slate-950/40 backdrop-blur-md"
                         onClick={() => setIsCartOpen(false)}
@@ -246,8 +284,18 @@ export default function ClientShop({ initialProducts }: { initialProducts: Produ
                                 <span className="font-outfit font-black text-white italic tracking-tighter">TOTAL</span>
                                 <span className="font-outfit font-black text-indigo-400">${cartTotal.toFixed(2)}</span>
                             </div>
-                            <button className="w-full py-5 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 hover:bg-indigo-600 hover:text-white transition-all shadow-xl active:scale-95">
-                                Finalizar Pedido <ArrowRight className="w-5 h-5" />
+                            <button
+                                onClick={handleCheckout}
+                                disabled={cart.length === 0 || isProcessing}
+                                className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 transition-all shadow-xl active:scale-95 ${cart.length === 0 || isProcessing ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-white text-slate-950 hover:bg-indigo-600 hover:text-white'}`}
+                            >
+                                {isProcessing ? (
+                                    <Zap className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <>
+                                        Finalizar Pedido <ArrowRight className="w-5 h-5" />
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>

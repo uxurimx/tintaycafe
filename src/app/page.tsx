@@ -12,18 +12,24 @@ import {
   Users,
   Gamepad2,
   MapPin,
-  ExternalLink
+  ExternalLink,
+  UserPlus
 } from "lucide-react";
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton, UserButton } from "@clerk/nextjs";
 import ClientShop from "@/components/ClientShop";
 import JoinLoyalty from "@/components/JoinLoyalty";
+import { getUserRole } from "@/lib/auth-utils";
 
 export default async function EcommerceStore() {
   const { userId } = await auth();
 
+  // Fetch user role using centralized logic
+  const userRole = await getUserRole();
+  const isStaff = ['admin', 'owner', 'employee', 'kitchen'].includes(userRole);
+
   // Fetch real products with inventory for the shop
-  let products = [];
+  let products: any[] = [];
   try {
     const stockData = await db
       .select({
@@ -85,15 +91,26 @@ export default async function EcommerceStore() {
             </div>
           ) : (
             <div className="flex items-center gap-6">
-              <Link href="/pos" className="hidden md:flex items-center gap-2 group">
+              <Link href="/me" className="flex items-center gap-2 group">
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black uppercase tracking-tighter text-indigo-400">Panel de Control</span>
-                  <span className="text-[9px] font-bold text-slate-500">ADMINISTRADOR</span>
+                  <span className="text-[10px] font-black uppercase tracking-tighter text-indigo-400">Mi Perfil</span>
+                  <span className="text-[9px] font-bold text-slate-500">CONSUMIDOR</span>
                 </div>
                 <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 group-hover:border-indigo-500/50 transition-all">
-                  <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
+                  <UserPlus className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
                 </div>
               </Link>
+              {isStaff && (
+                <Link href="/pos" className="hidden md:flex items-center gap-2 group">
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-black uppercase tracking-tighter text-indigo-400">Panel de Control</span>
+                    <span className="text-[9px] font-bold text-slate-500">ADMINISTRADOR</span>
+                  </div>
+                  <div className="p-2.5 bg-slate-900 rounded-xl border border-slate-800 group-hover:border-indigo-500/50 transition-all">
+                    <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-indigo-400" />
+                  </div>
+                </Link>
+              )}
               <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "w-10 h-10 rounded-xl border border-white/10" } }} />
             </div>
           )}

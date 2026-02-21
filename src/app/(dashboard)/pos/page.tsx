@@ -2,8 +2,10 @@ import { db } from "@/db";
 import { items, inventory, categories, customers, stores } from "@/db/schema";
 import QuantumPOS from "@/components/QuantumPOS";
 import { eq, gt } from "drizzle-orm";
+import { protectStaff } from "@/lib/auth-utils";
 
 export default async function POSPage() {
+    await protectStaff();
     let displayItems = [];
     let dbCustomers = [];
     let defaultStoreId = 1;

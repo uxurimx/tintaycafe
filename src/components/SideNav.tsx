@@ -8,22 +8,27 @@ import {
     ShoppingCart,
     Users,
     Settings,
-    ChevronRight
+    ChevronRight,
+    UserPlus
 } from "lucide-react";
 import { UserButton, useUser } from "@clerk/nextjs";
 
 const navItems = [
-    { name: "Inventario", href: "/inventory", icon: Package },
-    { name: "Carta / Menú", href: "/menu", icon: Coffee },
-    { name: "Punto de Venta", href: "/pos", icon: ShoppingCart },
-    { name: "Proveedores", href: "/suppliers", icon: Users }, // Reusing Users icon or similar
-    { name: "Clientes", href: "/customers", icon: Users },
-    { name: "Configuración", href: "/settings", icon: Settings },
+    { name: "Mi Perfil", href: "/me", icon: UserPlus, roles: ['admin', 'owner', 'employee', 'kitchen', 'customer'] },
+    { name: "Inventario", href: "/inventory", icon: Package, roles: ['admin', 'owner', 'employee'] },
+    { name: "Carta / Menú", href: "/menu", icon: Coffee, roles: ['admin', 'owner', 'employee', 'kitchen'] },
+    { name: "Punto de Venta", href: "/pos", icon: ShoppingCart, roles: ['admin', 'owner', 'employee'] },
+    { name: "Proveedores", href: "/suppliers", icon: Users, roles: ['admin', 'owner', 'employee'] },
+    { name: "Clientes", href: "/customers", icon: Users, roles: ['admin', 'owner', 'employee'] },
+    { name: "Configuración", href: "/settings", icon: Settings, roles: ['admin', 'owner', 'employee'] },
 ];
 
-export default function SideNav() {
+export default function SideNav({ userRole = 'customer' }: { userRole?: string }) {
     const pathname = usePathname();
     const { user } = useUser();
+
+    const isStaff = ['admin', 'owner', 'employee'].includes(userRole);
+    const filteredNav = navItems.filter(item => item.roles.includes(userRole));
 
     return (
         <div className="h-screen w-64 bg-slate-950 border-r border-slate-900 flex flex-col p-4 fixed left-0 top-0 z-50">
@@ -38,7 +43,7 @@ export default function SideNav() {
             </div>
 
             <nav className="flex-1 space-y-2">
-                {navItems.map((item) => {
+                {filteredNav.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link
@@ -75,7 +80,11 @@ export default function SideNav() {
                         <span className="text-xs font-bold text-slate-200 truncate">
                             {user?.firstName || "Usuario"} {user?.lastName || ""}
                         </span>
-                        <span className="text-[10px] text-slate-500 font-medium">Propietario</span>
+                        <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">
+                            {userRole === 'owner' ? 'Propietario' :
+                                userRole === 'admin' ? 'Administrador' :
+                                    userRole === 'employee' ? 'Staff' : 'Consumidor'}
+                        </span>
                     </div>
                 </div>
             </div>
