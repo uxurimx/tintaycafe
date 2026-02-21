@@ -11,8 +11,13 @@ import {
     Star,
     Coffee,
     Book,
-    Gamepad2
+    Gamepad2,
+    FlaskConical,
+    Clock,
+    Plus,
+    QrCode
 } from "lucide-react";
+import Link from "next/link";
 
 interface TransactionItem {
     id: number;
@@ -25,8 +30,19 @@ interface TransactionItem {
 interface Transaction {
     id: number;
     total: number;
+    status: string;
     createdAt: Date | null;
     items: TransactionItem[];
+}
+
+interface CustomRecipe {
+    id: number;
+    name: string;
+    ingredients: string;
+    basePrice: number;
+    baseItem?: {
+        name: string;
+    } | null;
 }
 
 interface Customer {
@@ -34,41 +50,71 @@ interface Customer {
     name: string;
     email: string | null;
     points: number | null;
+    xp: number | null;
+    rank: string | null;
     createdAt: Date | null;
 }
 
 export default function CustomerProfile({
     customer,
-    transactions
+    transactions,
+    customRecipes = [],
+    activeOrders = []
 }: {
     customer: Customer;
     transactions: Transaction[];
+    customRecipes?: CustomRecipe[];
+    activeOrders?: any[];
 }) {
     const totalSpent = transactions.reduce((acc, t) => acc + t.total, 0);
-    const lastPurchase = transactions[0];
+
+    // XP Logic
+    const currentXP = customer.xp || 0;
+    const nextLevelXP = currentXP > 1000 ? 5000 : currentXP > 500 ? 1000 : currentXP > 100 ? 500 : 100;
+    const progress = (currentXP / nextLevelXP) * 100;
 
     return (
         <div className="space-y-12 max-w-7xl mx-auto px-6 pb-20">
             {/* Hero Stats Card */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[3.5rem] p-12 text-white shadow-2xl shadow-indigo-500/20 group">
+                <div className="lg:col-span-2 relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 rounded-[3.5rem] p-12 text-white shadow-2xl shadow-indigo-500/20 group">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 group-hover:bg-white/20 transition-all duration-700" />
 
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-12">
-                        <div className="space-y-4">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur-md">
-                                <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Miembro Quantum Premium</span>
+                        <div className="space-y-6 flex-1">
+                            <div className="flex flex-wrap gap-2">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 border border-white/30 backdrop-blur-md">
+                                    <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{customer.rank || 'Aprendiz'} Quantum</span>
+                                </div>
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/30 border border-white/10 backdrop-blur-md">
+                                    <Zap className="w-3 h-3 text-indigo-300" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{currentXP} XP</span>
+                                </div>
                             </div>
-                            <h1 className="text-5xl md:text-6xl font-outfit font-black italic tracking-tighter leading-none">
-                                Hola, <br /> {customer.name}
-                            </h1>
-                            <p className="text-indigo-100 font-medium max-w-xs opacity-80">
-                                Tu sincronización Durango-Digital ha procesado {transactions.length} experiencias memorables.
-                            </p>
+
+                            <div className="space-y-4">
+                                <h1 className="text-5xl md:text-6xl font-outfit font-black italic tracking-tighter leading-none">
+                                    Hola, <br /> {customer.name}
+                                </h1>
+
+                                {/* Progress Bar */}
+                                <div className="max-w-xs space-y-2">
+                                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-indigo-200">
+                                        <span>Progreso de Rango</span>
+                                        <span>{Math.round(progress)}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden border border-white/5">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-emerald-400 to-indigo-300 transition-all duration-1000"
+                                            style={{ width: `${progress}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="flex flex-col items-end gap-2">
+                        <div className="flex flex-col items-end gap-2 shrink-0">
                             <div className="text-right">
                                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-200 mb-2">Puntos Acumulados</p>
                                 <div className="flex items-center gap-4">
@@ -104,49 +150,111 @@ export default function CustomerProfile({
                         </div>
                     </div>
 
-                    <button className="w-full py-5 bg-white text-slate-950 rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-slate-200 transition-all active:scale-95 shadow-xl shadow-white/5">
+                    <Link href="/" className="w-full py-5 bg-white text-slate-950 rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 hover:bg-slate-200 transition-all active:scale-95 shadow-xl shadow-white/5">
                         <ShoppingBag className="w-4 h-4" /> Nueva Experiencia
-                    </button>
+                    </Link>
                 </div>
             </div>
 
-            {/* Main Content Sections */}
+            {/* Quantum Sections */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                {/* Recent History */}
-                <div className="lg:col-span-2 space-y-8">
-                    <div className="flex justify-between items-end">
-                        <h2 className="text-4xl font-outfit font-black text-white italic tracking-tighter uppercase">Cronología Circular</h2>
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Últimas 10 Transacciones</span>
-                    </div>
-
-                    <div className="space-y-4">
-                        {transactions.map(transaction => (
-                            <div key={transaction.id} className="group p-8 bg-slate-900/40 border border-slate-800 rounded-[2.5rem] hover:border-indigo-500/30 transition-all">
-                                <div className="flex flex-col md:flex-row justify-between gap-6">
-                                    <div className="flex items-start gap-6">
-                                        <div className="w-16 h-16 bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                            <CreditCard className="w-8 h-8 text-slate-600" />
+                {/* Left Column: Orders & History */}
+                <div className="lg:col-span-2 space-y-12">
+                    {/* Active Orders Section */}
+                    {activeOrders.length > 0 && (
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-3">
+                                <Clock className="w-6 h-6 text-indigo-400" />
+                                <h2 className="text-3xl font-outfit font-black text-white italic tracking-tighter uppercase">Sintonía en Tiempo Real</h2>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {activeOrders.map(order => (
+                                    <div key={order.id} className="p-6 bg-indigo-500/5 border border-indigo-500/20 rounded-3xl flex justify-between items-center animate-pulse">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Orden #{order.id}</p>
+                                            <p className="text-lg font-bold text-white capitalize">{order.status === 'preparing' ? 'En Preparación' : 'Pendiente'}</p>
                                         </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
-                                                ID_TRANS_{transaction.id} | {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '---'}
-                                            </p>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                {transaction.items.map((item, i) => (
-                                                    <span key={i} className="px-3 py-1 bg-slate-950/80 rounded-lg border border-slate-800 text-[10px] font-bold text-slate-300">
-                                                        {item.quantity}x {item.name}
-                                                    </span>
-                                                ))}
+                                        <div className="w-12 h-12 bg-indigo-600/20 rounded-2xl flex items-center justify-center border border-indigo-500/30">
+                                            <Coffee className="w-6 h-6 text-indigo-400" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Custom Recipes / Alchemy Lab */}
+                    <div className="space-y-6">
+                        <div className="flex justify-between items-end">
+                            <div className="flex items-center gap-3">
+                                <FlaskConical className="w-6 h-6 text-purple-400" />
+                                <h2 className="text-3xl font-outfit font-black text-white italic tracking-tighter uppercase">Mis Alquimias</h2>
+                            </div>
+                            <Link href="/me/alchemy" className="px-4 py-2 bg-indigo-600/20 text-indigo-300 rounded-xl border border-indigo-500/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-600 hover:text-white transition-all">
+                                <Plus className="w-3 h-3" /> Crear Nueva
+                            </Link>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {customRecipes.length > 0 ? (
+                                customRecipes.map(recipe => (
+                                    <div key={recipe.id} className="p-8 bg-slate-900/40 border border-slate-800 rounded-[2.5rem] hover:border-purple-500/30 transition-all flex justify-between items-center group">
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-purple-400">Base: {recipe.baseItem?.name || 'Varios'}</p>
+                                            <h4 className="text-xl font-bold text-white italic">{recipe.name}</h4>
+                                            <div className="flex items-center gap-2 text-indigo-400 font-black tracking-tighter">
+                                                <span>${recipe.basePrice}</span>
                                             </div>
                                         </div>
+                                        <button className="w-12 h-12 bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-all">
+                                            <QrCode className="w-6 h-6" />
+                                        </button>
                                     </div>
-                                    <div className="flex flex-col items-end justify-center">
-                                        <p className="text-3xl font-outfit font-black text-white italic tracking-tighter">${transaction.total.toFixed(2)}</p>
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-600 mt-1">Sincronizado</span>
+                                ))
+                            ) : (
+                                <div className="col-span-full py-12 bg-slate-900/40 border border-slate-800 border-dashed rounded-[2.5rem] text-center space-y-4">
+                                    <FlaskConical className="w-10 h-10 text-slate-700 mx-auto" />
+                                    <p className="text-sm text-slate-500">¿Aún no has creado tu propia esencia? Explora el Lab.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-8">
+                        <div className="flex justify-between items-end">
+                            <h2 className="text-4xl font-outfit font-black text-white italic tracking-tighter uppercase">Cronología Circular</h2>
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Últimas 10 Transacciones</span>
+                        </div>
+
+                        <div className="space-y-4">
+                            {transactions.map(transaction => (
+                                <div key={transaction.id} className="group p-8 bg-slate-900/40 border border-slate-800 rounded-[2.5rem] hover:border-indigo-500/30 transition-all">
+                                    <div className="flex flex-col md:flex-row justify-between gap-6">
+                                        <div className="flex items-start gap-6">
+                                            <div className="w-16 h-16 bg-slate-950 rounded-2xl border border-slate-800 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                                <CreditCard className="w-8 h-8 text-slate-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
+                                                    ID_TRANS_{transaction.id} | {transaction.createdAt ? new Date(transaction.createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '---'}
+                                                </p>
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {transaction.items.map((item, i) => (
+                                                        <span key={i} className="px-3 py-1 bg-slate-950/80 rounded-lg border border-slate-800 text-[10px] font-bold text-slate-300">
+                                                            {item.quantity}x {item.name}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end justify-center">
+                                            <p className="text-3xl font-outfit font-black text-white italic tracking-tighter">${transaction.total.toFixed(2)}</p>
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500 mt-1">Completado</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -178,10 +286,21 @@ export default function CustomerProfile({
                         </button>
                     </div>
 
-                    <div className="p-10 bg-slate-950 border border-slate-800 rounded-[3rem] text-center space-y-4 opacity-50 grayscale">
-                        <Package className="w-10 h-10 text-slate-700 mx-auto" />
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Módulo de Retiro en Sucursal</p>
-                        <p className="text-xs font-medium text-slate-700">Tus pedidos listos para pick-up aparecerán aquí.</p>
+                    {/* Quantum Flux (Offers) placeholder */}
+                    <div className="p-8 bg-slate-950 border border-slate-800 rounded-[3rem] space-y-6">
+                        <div className="flex items-center gap-3">
+                            <Zap className="w-5 h-5 text-yellow-400" />
+                            <h3 className="text-xl font-bold text-white tracking-tighter italic">Quantum Flux</h3>
+                        </div>
+                        <p className="text-xs text-slate-500">Misiones activas para ganar XP extra.</p>
+
+                        <div className="space-y-3">
+                            <div className="p-4 bg-slate-900/50 rounded-2xl border border-white/5 opacity-60">
+                                <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Misión Diaria</p>
+                                <p className="text-sm font-bold text-slate-400 mt-1">Visita antes de las 10 AM</p>
+                                <p className="text-[10px] text-indigo-400 font-bold mt-2">+50 XP | +10 Puntos</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

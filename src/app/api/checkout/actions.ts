@@ -46,6 +46,7 @@ export async function processWebSale(data: {
             customerId: customerRecord.id,
             total: data.total,
             type: 'sale',
+            status: 'preparing',
             createdAt: new Date(),
         }).returning();
 
@@ -104,4 +105,26 @@ export async function processWebSale(data: {
 
         return { success: true, transactionId: newTransaction.id };
     });
+}
+
+export async function updateTransactionStatus(transactionId: number, status: string) {
+    const [updated] = await db.update(transactions)
+        .set({ status })
+        .where(eq(transactions.id, transactionId))
+        .returning();
+
+    if (updated) {
+        try {
+            await pusherServer.trigger(`order-updates-${updated.customerId}`, 'status-changed', {
+                transactionId: updated.id,
+                status: updated.status,
+            });
+        } catch (error) {
+            console.error("Pusher status update failed:", error);
+        }
+    }
+
+    revalidatePath("/pos");
+    revalidatePath("/me");
+    return updated;
 }

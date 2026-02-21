@@ -1,9 +1,10 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { customers, transactions, transactionItems, items } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { customers, transactions, transactionItems, items, customRecipes } from "@/db/schema";
+import { eq, desc, and, not } from "drizzle-orm";
 import CustomerProfile from "@/components/CustomerProfile";
+import OrderStatusListener from "@/components/OrderStatusListener";
 
 export default async function MemberDashboardPage() {
     const { userId } = await auth();
@@ -47,10 +48,11 @@ export default async function MemberDashboardPage() {
         }
     });
 
-    // 3. Format history for the component
+    // 3. Format history
     const formattedHistory = history.map(t => ({
         id: t.id,
         total: t.total,
+        status: t.status,
         createdAt: t.createdAt,
         items: t.items.map(ti => ({
             id: ti.id,
@@ -61,11 +63,33 @@ export default async function MemberDashboardPage() {
         }))
     }));
 
+    // 4. Fetch Custom Recipes
+    const userRecipes = await db.query.customRecipes.findMany({
+        where: eq(customRecipes.userId, userId),
+        orderBy: [desc(customRecipes.createdAt)],
+        with: {
+            baseItem: true
+        }
+    });
+
+    // 5. Fetch Active Orders
+    const activeOrders = history
+        .filter(t => t.status !== 'completed')
+        .map(t => ({
+            id: t.id,
+            status: t.status,
+            total: t.total,
+            createdAt: t.createdAt
+        }));
+
     return (
         <div className="pt-32 min-h-screen bg-slate-950">
+            <OrderStatusListener customerId={customerRecord.id} />
             <CustomerProfile
                 customer={customerRecord as any}
                 transactions={formattedHistory as any}
+                customRecipes={userRecipes as any}
+                activeOrders={activeOrders as any}
             />
         </div>
     );

@@ -75,6 +75,7 @@ export const transactions = pgTable('transactions', {
     customerId: integer('customer_id').references(() => customers.id),
     total: doublePrecision('total').notNull(),
     type: varchar('type', { length: 50 }).notNull().default('sale'), // 'sale', 'transfer', 'restock'
+    status: varchar('status', { length: 50 }).notNull().default('completed'), // 'pending', 'preparing', 'ready', 'completed'
     supplierId: integer('supplier_id').references(() => suppliers.id),
     createdAt: timestamp('created_at').defaultNow(),
 });
@@ -106,6 +107,19 @@ export const customers = pgTable('customers', {
     phone: varchar('phone', { length: 20 }),
     birthday: timestamp('birthday'),
     points: integer('points').default(0),
+    xp: integer('xp').default(0),
+    rank: varchar('rank', { length: 50 }).default('Aprendiz'), // 'Aprendiz', 'Alquimista', 'Maestro', 'Quantum'
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Custom Recipes: User-created drink recipes
+export const customRecipes = pgTable('custom_recipes', {
+    id: serial('id').primaryKey(),
+    userId: text('user_id').references(() => users.id).notNull(),
+    name: text('name').notNull(),
+    baseItemId: integer('base_item_id').references(() => items.id), // e.g. "Latte" base
+    ingredients: text('ingredients').notNull(), // JSON string of ingredients and adjustments
+    basePrice: doublePrecision('base_price').notNull().default(0),
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -127,6 +141,7 @@ export const transactionRelations = relations(transactions, ({ one, many }) => (
     customer: one(customers, { fields: [transactions.customerId], references: [customers.id] }),
     items: many(transactionItems),
 }));
+
 export const transactionItemRelations = relations(transactionItems, ({ one }) => ({
     transaction: one(transactions, { fields: [transactionItems.transactionId], references: [transactions.id] }),
     item: one(items, { fields: [transactionItems.itemId], references: [items.id] }),
@@ -140,4 +155,9 @@ export const userRelations = relations(users, ({ one, many }) => ({
 export const supplierRelations = relations(suppliers, ({ many }) => ({
     items: many(items),
     restocks: many(transactions),
+}));
+
+export const customRecipeRelations = relations(customRecipes, ({ one }) => ({
+    user: one(users, { fields: [customRecipes.userId], references: [users.id] }),
+    baseItem: one(items, { fields: [customRecipes.baseItemId], references: [items.id] }),
 }));
