@@ -10,10 +10,13 @@ import {
     CheckCircle2,
     AlertCircle,
     ArrowRight,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Camera,
+    CameraOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { addAutoBook } from "@/app/api/books/actions";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 interface BookData {
     title: string;
@@ -36,8 +39,46 @@ export default function BookAutomation({ stores }: { stores: any[] }) {
     const [stock, setStock] = useState("1");
     const [selectedStore, setSelectedStore] = useState(stores[0]?.id || "");
     const [isSaving, setIsSaving] = useState(false);
+    const [isScannerActive, setIsScannerActive] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // Camera Scanner Effect
+    useEffect(() => {
+        let scanner: Html5QrcodeScanner | null = null;
+
+        if (isScannerActive) {
+            scanner = new Html5QrcodeScanner(
+                "reader",
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 150 },
+                    aspectRatio: 1.777778
+                },
+                /* verbose= */ false
+            );
+
+            scanner.render(
+                (decodedText) => {
+                    const cleanCode = decodedText.replace(/[^0-9]/g, "");
+                    if (cleanCode.length >= 10) {
+                        setIsbn(cleanCode);
+                        fetchBookData(cleanCode, true);
+                        setIsScannerActive(false);
+                    }
+                },
+                (error) => {
+                    // console.warn(error);
+                }
+            );
+        }
+
+        return () => {
+            if (scanner) {
+                scanner.clear().catch(error => console.error("Failed to clear scanner", error));
+            }
+        };
+    }, [isScannerActive]);
 
     // Auto-focus input on mount
     useEffect(() => {
@@ -155,7 +196,35 @@ export default function BookAutomation({ stores }: { stores: any[] }) {
                     >
                         <Search className="w-5 h-5" /> Buscar
                     </button>
+                    <button
+                        onClick={() => setIsScannerActive(!isScannerActive)}
+                        className={`h-16 px-8 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg ${isScannerActive
+                            ? "bg-rose-600 text-white hover:bg-rose-500 shadow-rose-600/20"
+                            : "bg-slate-800 text-slate-200 hover:bg-slate-700 shadow-slate-900/40"
+                            }`}
+                    >
+                        {isScannerActive ? (
+                            <>
+                                <CameraOff className="w-5 h-5" /> Cerrar Cámara
+                            </>
+                        ) : (
+                            <>
+                                <Camera className="w-5 h-5" /> Usar Cámara
+                            </>
+                        )}
+                    </button>
                 </div>
+
+                {isScannerActive && (
+                    <div className="mt-8 overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-950 shadow-2xl animate-in fade-in zoom-in duration-300">
+                        <div id="reader" className="w-full"></div>
+                        <div className="p-4 bg-indigo-600/10 text-center">
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">
+                                Centra el código de barras en el recuadro para escanear
+                            </p>
+                        </div>
+                    </div>
+                )}
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-4">
                     Soporta escáners de hardware y entrada manual (ISBN-10 / ISBN-13)
                 </p>
