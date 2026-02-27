@@ -12,7 +12,7 @@ import {
     LayoutGrid,
 } from "lucide-react";
 import { createRole, updateRole, deleteRole } from "@/app/api/roles/actions";
-import { MODULE_OPTIONS } from "@/lib/roles";
+import { MODULE_OPTIONS } from "@/lib/modules";
 import { toast } from "sonner";
 
 interface RoleWithModules {
@@ -251,11 +251,10 @@ export default function RoleManager({
                                     {MODULE_OPTIONS.map((opt) => (
                                         <label
                                             key={opt.id}
-                                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${
-                                                editModules.includes(opt.id)
+                                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${editModules.includes(opt.id)
                                                     ? "bg-indigo-600/20 border-indigo-500/50 text-white"
                                                     : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
-                                            }`}
+                                                }`}
                                         >
                                             <input
                                                 type="checkbox"
