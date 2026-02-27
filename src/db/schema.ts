@@ -33,6 +33,7 @@ export const items = pgTable('items', {
     price: doublePrecision('price').notNull().default(0),
     costPrice: doublePrecision('cost_price').default(0),
     unit: varchar('unit', { length: 50 }), // kg, liter, piece, etc.
+    isSupply: boolean('is_supply').default(false).notNull(),
     supplierId: integer('supplier_id').references(() => suppliers.id),
     createdAt: timestamp('created_at').defaultNow(),
 });

@@ -18,6 +18,7 @@ export async function addInventoryItem(formData: FormData) {
     const costPrice = formData.get("costPrice") ? parseFloat(formData.get("costPrice") as string) : 0;
     const unit = formData.get("unit") as string;
     const supplierId = formData.get("supplierId") ? parseInt(formData.get("supplierId") as string) : null;
+    const isSupply = formData.get("isSupply") === "true";
 
     // 0. Ensure Store exists (Self-healing)
     const existingStore = await db.query.stores.findFirst({
@@ -43,10 +44,11 @@ export async function addInventoryItem(formData: FormData) {
             costPrice,
             unit,
             supplierId,
+            isSupply,
         })
         .onConflictDoUpdate({
             target: items.barcode,
-            set: { name, categoryId, costPrice, unit, supplierId },
+            set: { name, categoryId, costPrice, unit, supplierId, isSupply },
         })
         .returning();
 
@@ -85,6 +87,7 @@ export async function addInventoryItem(formData: FormData) {
             type,
             categoryId,
             storeId,
+            isSupply,
             uId: `${item.id}-${storeId}`
         }
     };
@@ -113,6 +116,7 @@ export async function updateInventoryItem(itemId: number, storeId: number, data:
     costPrice?: number;
     unit?: string;
     supplierId?: number | null;
+    isSupply?: boolean;
 }) {
     try {
         if (data.name || data.categoryId !== undefined || data.costPrice !== undefined || data.unit !== undefined || data.supplierId !== undefined) {
@@ -122,6 +126,7 @@ export async function updateInventoryItem(itemId: number, storeId: number, data:
                 costPrice: data.costPrice,
                 unit: data.unit,
                 supplierId: data.supplierId,
+                isSupply: data.isSupply,
             }).where(eq(items.id, itemId));
         }
 

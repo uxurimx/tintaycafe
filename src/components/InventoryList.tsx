@@ -57,6 +57,7 @@ interface InventoryItem {
     costPrice?: number;
     unit?: string;
     supplierId?: number | null;
+    isSupply: boolean;
 }
 
 export default function InventoryList({
@@ -270,7 +271,14 @@ export default function InventoryList({
                                                 )}
                                             </div>
                                             <div>
-                                                <p className="font-outfit font-bold text-lg text-slate-100 group-hover/row:text-white transition-colors tracking-tight">{item.name}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-outfit font-bold text-lg text-slate-100 group-hover/row:text-white transition-colors tracking-tight">{item.name}</p>
+                                                    {item.isSupply && (
+                                                        <span className="px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[8px] font-black text-indigo-400 uppercase tracking-widest">
+                                                            Insumo
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="flex items-center gap-2 mt-0.5">
                                                     <p className="text-[10px] text-zinc-600 font-mono tracking-tighter">REF_{item.barcode}</p>
                                                     <span className="w-1 h-1 bg-slate-800 rounded-full" />
@@ -419,7 +427,8 @@ export default function InventoryList({
                                         const res = await updateInventoryItem(selectedItem.id, sid, {
                                             name: formData.get("name") as string,
                                             quantity: parseFloat(formData.get("quantity") as string),
-                                            categoryId: formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null
+                                            categoryId: formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null,
+                                            isSupply: formData.get("isSupply") === "true"
                                         });
                                         if (res.success && res.data) {
                                             setItems(prev => prev.map(i => i.uId === res.data.uId ? { ...i, ...res.data } : i));
@@ -477,6 +486,22 @@ export default function InventoryList({
                                         <select name="storeId" className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none appearance-none">
                                             {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                         </select>
+                                    </div>
+                                    <div className="col-span-2 p-5 bg-slate-900/30 border border-slate-800 rounded-3xl flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs font-bold text-white uppercase tracking-tight">¿Es un Insumo?</p>
+                                            <p className="text-[10px] text-slate-500 font-medium">Si se marca, no aparecerá en el POS ni en la tienda pública.</p>
+                                        </div>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="isSupply"
+                                                value="true"
+                                                defaultChecked={isEditMode ? selectedItem?.isSupply : false}
+                                                className="sr-only peer"
+                                            />
+                                            <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white"></div>
+                                        </label>
                                     </div>
                                     <input type="hidden" name="type" value="insumo" />
                                     <button type="submit" className="col-span-2 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-indigo-600/30 transition-all active:scale-95">

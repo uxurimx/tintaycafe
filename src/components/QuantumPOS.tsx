@@ -37,6 +37,7 @@ interface POSItem {
     type: string;
     categoryName: string | null;
     imageUrl?: string;
+    isSupply: boolean;
 }
 
 interface CartItem extends POSItem {

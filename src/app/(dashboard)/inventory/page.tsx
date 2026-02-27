@@ -35,6 +35,7 @@ export default async function InventoryPage() {
                 costPrice: items.costPrice,
                 unit: items.unit,
                 supplierId: items.supplierId,
+                isSupply: items.isSupply,
             })
             .from(items)
             .innerJoin(inventory, eq(items.id, inventory.itemId))
@@ -48,7 +49,8 @@ export default async function InventoryPage() {
             uId: `${item.id}-${item.storeId}`,
             costPrice: item.costPrice || 0,
             unit: item.unit || "pieza",
-            supplierId: item.supplierId
+            supplierId: item.supplierId,
+            isSupply: item.isSupply ?? false,
         })) as any[];
 
         // Default store if none exists

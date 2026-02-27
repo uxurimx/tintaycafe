@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { items, inventory, categories } from "@/db/schema";
-import { eq, gt } from "drizzle-orm";
+import { eq, gt, and } from "drizzle-orm";
 import Link from "next/link";
 import {
   Coffee,
@@ -43,11 +43,12 @@ export default async function EcommerceStore() {
         categoryName: categories.name,
         description: items.description,
         metadata: items.metadata,
+        isSupply: items.isSupply,
       })
       .from(items)
       .innerJoin(inventory, eq(items.id, inventory.itemId))
       .leftJoin(categories, eq(items.categoryId, categories.id))
-      .where(gt(inventory.quantity, 0))
+      .where(and(gt(inventory.quantity, 0), eq(items.isSupply, false)))
       .limit(20);
     products = stockData;
   } catch (e) {

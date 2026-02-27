@@ -31,6 +31,7 @@ interface Product {
     categoryName?: string | null;
     description?: string | null;
     metadata?: string | null;
+    isSupply: boolean;
 }
 
 interface CartItem extends Product {
