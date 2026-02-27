@@ -14,7 +14,9 @@ import {
     Shield,
     Menu,
     X,
-    Book
+    Book,
+    Utensils,
+    BarChart3
 } from "lucide-react";
 import { UserButton, useUser } from "@clerk/nextjs";
 
@@ -27,6 +29,8 @@ const navItems = [
     { name: "Proveedores", href: "/suppliers", icon: Users, module: "suppliers" as const },
     { name: "Clientes", href: "/customers", icon: Users, module: "customers" as const },
     { name: "Libros", href: "/books", icon: Book, module: "books" as const },
+    { name: "Cocina", href: "/kitchen", icon: Utensils, module: "kitchen" as const },
+    { name: "Reportes", href: "/reports", icon: BarChart3, module: "reports" as const },
     { name: "Configuración", href: "/settings", icon: Settings, module: "settings" as const },
 ];
 

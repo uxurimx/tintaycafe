@@ -35,9 +35,14 @@ export async function getModulesForRoleSlug(roleSlug: string): Promise<string[]>
             modules = ["me"];
         }
 
-        // Hardcoded safety for the new Books module until DB is synced
-        if (['owner', 'admin', 'employee'].includes(roleSlug) && !modules.includes("books")) {
-            modules.push("books");
+        // Hardcoded safety for the new modules until DB is synced
+        const newModules = ["books", "kitchen", "reports"];
+        if (['owner', 'admin'].includes(roleSlug)) {
+            newModules.forEach(m => {
+                if (!modules.includes(m)) modules.push(m);
+            });
+        } else if (roleSlug === 'employee' || roleSlug === 'kitchen') {
+            if (!modules.includes("kitchen")) modules.push("kitchen");
         }
 
         return modules;
