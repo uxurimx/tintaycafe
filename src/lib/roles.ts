@@ -11,14 +11,15 @@ export const MODULE_OPTIONS = [
     { id: "customers", label: "Clientes" },
     { id: "suppliers", label: "Proveedores" },
     { id: "settings", label: "Configuración" },
+    { id: "books", label: "Libros" },
 ] as const;
 
 export type ModuleId = (typeof MODULE_OPTIONS)[number]["id"];
 
 const FALLBACK_MODULES: Record<string, string[]> = {
-    owner: ["me", "users", "inventory", "menu", "pos", "customers", "suppliers", "settings"],
-    admin: ["me", "users", "inventory", "menu", "pos", "customers", "suppliers", "settings"],
-    employee: ["me", "inventory", "menu", "pos", "customers", "suppliers", "settings"],
+    owner: ["me", "users", "inventory", "menu", "pos", "customers", "suppliers", "settings", "books"],
+    admin: ["me", "users", "inventory", "menu", "pos", "customers", "suppliers", "settings", "books"],
+    employee: ["me", "inventory", "menu", "pos", "customers", "suppliers", "settings", "books"],
     kitchen: ["me", "menu"],
     customer: ["me"],
 };
@@ -42,8 +43,22 @@ export async function getModulesForRoleSlug(roleSlug: string): Promise<string[]>
             where: eq(roles.slug, roleSlug),
             with: { modules: true },
         });
-        if (role?.modules?.length) return role.modules.map((m) => m.module);
-        if (roleSlug in FALLBACK_MODULES) return FALLBACK_MODULES[roleSlug];
+
+        let modules: string[] = [];
+        if (role?.modules?.length) {
+            modules = role.modules.map((m) => m.module);
+        } else if (roleSlug in FALLBACK_MODULES) {
+            modules = [...FALLBACK_MODULES[roleSlug]];
+        } else {
+            modules = ["me"];
+        }
+
+        // Hardcoded safety for the new Books module until DB is synced
+        if (['owner', 'admin', 'employee'].includes(roleSlug) && !modules.includes("books")) {
+            modules.push("books");
+        }
+
+        return modules;
     } catch {
         if (roleSlug in FALLBACK_MODULES) return FALLBACK_MODULES[roleSlug];
     }

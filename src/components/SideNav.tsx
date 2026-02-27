@@ -13,7 +13,8 @@ import {
     UserPlus,
     Shield,
     Menu,
-    X
+    X,
+    Book
 } from "lucide-react";
 import { UserButton, useUser } from "@clerk/nextjs";
 
@@ -25,6 +26,7 @@ const navItems = [
     { name: "Punto de Venta", href: "/pos", icon: ShoppingCart, module: "pos" as const },
     { name: "Proveedores", href: "/suppliers", icon: Users, module: "suppliers" as const },
     { name: "Clientes", href: "/customers", icon: Users, module: "customers" as const },
+    { name: "Libros", href: "/books", icon: Book, module: "books" as const },
     { name: "Configuración", href: "/settings", icon: Settings, module: "settings" as const },
 ];
 
