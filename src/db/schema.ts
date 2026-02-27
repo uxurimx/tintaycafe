@@ -57,12 +57,30 @@ export const recipes = pgTable('recipes', {
     quantity: doublePrecision('quantity').notNull(), // Amount consumed per product
 });
 
-// Users/Employees
+// Roles: system + custom (slug used in users.role)
+export const roles = pgTable('roles', {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    slug: varchar('slug', { length: 50 }).notNull().unique(),
+    isSystem: boolean('is_system').notNull().default(false), // true = cannot delete
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Role modules: which nav modules this role can access
+export const roleModules = pgTable('role_modules', {
+    id: serial('id').primaryKey(),
+    roleId: integer('role_id').references(() => roles.id, { onDelete: 'cascade' }).notNull(),
+    module: varchar('module', { length: 50 }).notNull(), // me, users, inventory, menu, pos, customers, suppliers, settings
+}, (table) => ({
+    unq: unique().on(table.roleId, table.module),
+}));
+
+// Users/Employees (users.role = role slug from roles table)
 export const users = pgTable('users', {
     id: text('id').primaryKey(), // Clerk ID
     email: text('email').notNull(),
     name: text('name').notNull(),
-    role: varchar('role', { length: 50 }).notNull().default('customer'), // 'owner', 'employee', 'admin', 'kitchen', 'customer'
+    role: varchar('role', { length: 50 }).notNull().default('customer'), // slug: owner, admin, employee, kitchen, customer, or custom
     storeId: integer('store_id').references(() => stores.id),
     createdAt: timestamp('created_at').defaultNow(),
 });
@@ -145,6 +163,14 @@ export const transactionRelations = relations(transactions, ({ one, many }) => (
 export const transactionItemRelations = relations(transactionItems, ({ one }) => ({
     transaction: one(transactions, { fields: [transactionItems.transactionId], references: [transactions.id] }),
     item: one(items, { fields: [transactionItems.itemId], references: [items.id] }),
+}));
+
+export const roleRelations = relations(roles, ({ many }) => ({
+    modules: many(roleModules),
+}));
+
+export const roleModuleRelations = relations(roleModules, ({ one }) => ({
+    role: one(roles, { fields: [roleModules.roleId], references: [roles.id] }),
 }));
 
 export const userRelations = relations(users, ({ one, many }) => ({

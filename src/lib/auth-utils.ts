@@ -3,8 +3,9 @@ import { db } from "@/db";
 import { users as usersTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { getModulesForRoleSlug } from "@/lib/roles";
 
-export type Role = 'owner' | 'admin' | 'employee' | 'kitchen' | 'customer';
+export type Role = string; // slug: owner, admin, employee, kitchen, customer, or custom
 
 export async function getUserRole(): Promise<Role> {
     const { userId } = await auth();
@@ -15,7 +16,7 @@ export async function getUserRole(): Promise<Role> {
         where: eq(usersTable.id, userId)
     });
 
-    if (dbUser) return (dbUser.role as Role);
+    if (dbUser) return dbUser.role;
 
     // 2. If no user in DB, check if the table is empty
     const allUsers = await db.select().from(usersTable).limit(1);
@@ -53,7 +54,18 @@ export async function protectAdmin() {
 /** Only owner and admin - for sensitive operations like role management */
 export async function protectOwnerAdmin() {
     const role = await getUserRole();
-    if (role !== 'owner' && role !== 'admin') {
+    const modules = await getModulesForRoleSlug(role);
+    if (!modules.includes("users")) {
+        redirect("/me");
+    }
+    return { role };
+}
+
+/** Protect a page by module: redirect to /me if role doesn't have access */
+export async function protectModule(module: string) {
+    const role = await getUserRole();
+    const modules = await getModulesForRoleSlug(role);
+    if (!modules.includes(module)) {
         redirect("/me");
     }
     return { role };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Search, Shield, Mail, User } from "lucide-react";
+import { Users, Search, Mail, User } from "lucide-react";
 import { updateUserRole } from "@/app/api/users/actions";
 import { toast } from "sonner";
 
@@ -14,15 +14,19 @@ interface DbUser {
     createdAt: Date | null;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-    owner: "Propietario",
-    admin: "Administrador",
-    employee: "Empleado",
-    kitchen: "Cocina",
-    customer: "Cliente",
-};
+interface RoleOption {
+    id: number;
+    name: string;
+    slug: string;
+}
 
-export default function UserManager({ initialUsers }: { initialUsers: DbUser[] }) {
+export default function UserManager({
+    initialUsers,
+    initialRoles,
+}: {
+    initialUsers: DbUser[];
+    initialRoles: RoleOption[];
+}) {
     const [users, setUsers] = useState<DbUser[]>(initialUsers);
     const [searchTerm, setSearchTerm] = useState("");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -49,21 +53,7 @@ export default function UserManager({ initialUsers }: { initialUsers: DbUser[] }
     };
 
     return (
-        <div className="space-y-8 animate-fade-in">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                <div>
-                    <h1 className="text-4xl font-outfit font-black text-white tracking-tight flex items-center gap-4">
-                        <span className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/20">
-                            <Shield className="w-8 h-8" />
-                        </span>
-                        GESTIÓN DE USUARIOS
-                    </h1>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2 ml-1">
-                        ROLES Y ACCESOS AL NEXUS
-                    </p>
-                </div>
-            </div>
-
+        <div className="space-y-6">
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                 <input
@@ -108,9 +98,9 @@ export default function UserManager({ initialUsers }: { initialUsers: DbUser[] }
                                     disabled={updatingId === user.id}
                                     className="bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-4 text-sm font-bold text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50"
                                 >
-                                    {(Object.entries(ROLE_LABELS) as [string, string][]).map(([val, label]) => (
-                                        <option key={val} value={val}>
-                                            {label}
+                                    {initialRoles.map((r) => (
+                                        <option key={r.id} value={r.slug}>
+                                            {r.name}
                                         </option>
                                     ))}
                                 </select>

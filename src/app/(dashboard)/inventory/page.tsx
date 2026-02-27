@@ -2,10 +2,10 @@ import { db } from "@/db";
 import { items, inventory, categories, stores } from "@/db/schema";
 import InventoryList from "@/components/InventoryList";
 import { eq, and } from "drizzle-orm";
-import { protectStaff } from "@/lib/auth-utils";
+import { protectModule } from "@/lib/auth-utils";
 
 export default async function InventoryPage() {
-    await protectStaff();
+    await protectModule("inventory");
     let displayItems = [];
     let dbCategories: any[] = [];
     let dbStores: any[] = [];

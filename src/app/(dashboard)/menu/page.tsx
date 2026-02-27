@@ -2,10 +2,10 @@ import { db } from "@/db";
 import { items, categories } from "@/db/schema";
 import MenuManager from "@/components/MenuManager";
 import { eq, and } from "drizzle-orm";
-import { protectStaff } from "@/lib/auth-utils";
+import { protectModule } from "@/lib/auth-utils";
 
 export default async function MenuPage() {
-    await protectStaff();
+    await protectModule("menu");
     let displayProducts = [];
 
     try {

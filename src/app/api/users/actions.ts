@@ -1,12 +1,10 @@
 "use server";
 
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, roles } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { protectOwnerAdmin } from "@/lib/auth-utils";
 import { revalidatePath } from "next/cache";
-
-const VALID_ROLES = ['owner', 'admin', 'employee', 'kitchen', 'customer'] as const;
 
 export async function getUsers() {
     await protectOwnerAdmin();
@@ -18,15 +16,16 @@ export async function getUsers() {
     return list;
 }
 
-export async function updateUserRole(userId: string, newRole: string) {
+export async function updateUserRole(userId: string, newRoleSlug: string) {
     await protectOwnerAdmin();
 
-    if (!VALID_ROLES.includes(newRole as any)) {
-        throw new Error("Rol no válido");
-    }
+    const roleExists = await db.query.roles.findFirst({
+        where: eq(roles.slug, newRoleSlug),
+    });
+    if (!roleExists) throw new Error("Rol no válido");
 
     const [updated] = await db.update(users)
-        .set({ role: newRole })
+        .set({ role: newRoleSlug })
         .where(eq(users.id, userId))
         .returning();
 

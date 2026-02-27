@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Inter, Outfit, Playfair_Display } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs';
 import "./globals.css";
 
@@ -13,9 +13,14 @@ const outfit = Outfit({
   subsets: ["latin"],
 });
 
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Tinta y Café | Nexus Neuronal",
-  description: "Sistema de gestión inteligente para cafeterías y librerías.",
+  title: "Tinta y Café | Cafetería, Librería & Juegos en Durango",
+  description: "Un refugio para la mente en Durango. Café de especialidad, librería curada y juegos de mesa.",
   manifest: "/manifest.json",
 };
 
@@ -29,9 +34,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="es">
-        <body className={`${inter.variable} ${outfit.variable} antialiased font-sans bg-slate-950 text-slate-50`}>
+        <body className={`${inter.variable} ${outfit.variable} ${playfair.variable} antialiased font-sans bg-[#FFF8EF] text-[#3B1F0B]`}>
           {children}
-          <Toaster position="bottom-right" theme="dark" richColors />
+          <Toaster position="bottom-right" theme="light" richColors />
         </body>
       </html>
     </ClerkProvider>

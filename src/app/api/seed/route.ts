@@ -1,7 +1,23 @@
 import { db } from "@/db";
-import { stores, categories, items, inventory } from "@/db/schema";
+import { stores, categories, items, inventory, roles, roleModules } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+
+const SYSTEM_ROLES = [
+    { name: "Propietario", slug: "owner", isSystem: true },
+    { name: "Administrador", slug: "admin", isSystem: true },
+    { name: "Empleado", slug: "employee", isSystem: true },
+    { name: "Cocina", slug: "kitchen", isSystem: true },
+    { name: "Cliente", slug: "customer", isSystem: true },
+];
+
+const MODULES_BY_ROLE: Record<string, string[]> = {
+    owner: ["me", "users", "inventory", "menu", "pos", "customers", "suppliers", "settings"],
+    admin: ["me", "users", "inventory", "menu", "pos", "customers", "suppliers", "settings"],
+    employee: ["me", "inventory", "menu", "pos", "customers", "suppliers", "settings"],
+    kitchen: ["me", "menu"],
+    customer: ["me"],
+};
 
 const DEMO_CATEGORIES = [
     { name: "Cafetería", icon: "Coffee" },
@@ -72,6 +88,23 @@ export async function GET() {
                 }))
             );
             results.push("inventory");
+        }
+
+        // 5. Seed system roles and their modules
+        const existingRoles = await db.select().from(roles);
+        if (existingRoles.length === 0) {
+            await db.insert(roles).values(SYSTEM_ROLES);
+            results.push("roles");
+            const rolesAfter = await db.select().from(roles);
+            for (const r of rolesAfter) {
+                const mods = MODULES_BY_ROLE[r.slug];
+                if (mods?.length) {
+                    await db.insert(roleModules).values(
+                        mods.map(module => ({ roleId: r.id, module }))
+                    );
+                }
+            }
+            results.push("role_modules");
         }
 
         return NextResponse.json({

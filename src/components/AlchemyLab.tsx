@@ -55,28 +55,28 @@ export default function AlchemyLab({ bases }: { bases: BaseProduct[] }) {
                     <FlaskConical className="w-4 h-4 text-indigo-400" />
                     <span className="text-xs font-black uppercase tracking-widest text-indigo-300">Laboratorio de Alquimia</span>
                 </div>
-                <h2 className="text-4xl md:text-5xl font-outfit font-black text-white italic tracking-tighter">
+                <h2 className="text-3xl md:text-5xl font-outfit font-black text-white italic tracking-tighter">
                     Crea tu <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Esencia Quantum</span>
                 </h2>
-                <p className="text-slate-400 max-w-xl mx-auto">
+                <p className="text-slate-400 text-sm md:text-base max-w-xl mx-auto px-4">
                     Personaliza cada molécula de tu bebida. Tu receta será guardada en tu perfil con un código único para el barista.
                 </p>
             </div>
 
             {/* Stepper */}
-            <div className="flex justify-center items-center gap-4">
+            <div className="flex justify-center items-center gap-2 md:gap-4 px-4 overflow-x-auto pb-2">
                 {[1, 2, 3].map((s) => (
-                    <div key={s} className="flex items-center gap-4">
+                    <div key={s} className="flex items-center gap-2 md:gap-4 shrink-0">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black transition-all ${step === s ? 'bg-indigo-600 text-white scale-110 shadow-lg shadow-indigo-600/20' : step > s ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-900 text-slate-600 border border-slate-800'}`}>
                             {step > s ? <Check className="w-5 h-5" /> : s}
                         </div>
-                        {s < 3 && <div className={`w-12 h-0.5 rounded-full ${step > s ? 'bg-emerald-500/30' : 'bg-slate-800'}`} />}
+                        {s < 3 && <div className={`w-8 md:w-12 h-0.5 rounded-full ${step > s ? 'bg-emerald-500/30' : 'bg-slate-800'}`} />}
                     </div>
                 ))}
             </div>
 
             {/* Content areas */}
-            <div className="bg-slate-900/40 border border-slate-800 rounded-[3rem] p-8 md:p-12 backdrop-blur-xl relative overflow-hidden">
+            <div className="bg-slate-900/40 border border-slate-800 rounded-3xl md:rounded-[3rem] p-6 md:p-12 backdrop-blur-xl relative overflow-hidden mx-4 md:mx-0">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/5 rounded-full blur-[100px] pointer-events-none" />
 
                 {step === 1 && (
@@ -96,7 +96,7 @@ export default function AlchemyLab({ bases }: { bases: BaseProduct[] }) {
                                             <h4 className="font-bold text-white text-lg">{base.name}</h4>
                                             <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">{base.category}</p>
                                         </div>
-                                        <div className="text-xl font-outfit font-black text-indigo-400">${base.price}</div>
+                                        <div className="text-lg font-outfit font-black text-indigo-400">${base.price}</div>
                                     </div>
                                     {selectedBase?.id === base.id && (
                                         <div className="absolute top-4 right-4 animate-in zoom-in duration-300">
@@ -111,7 +111,7 @@ export default function AlchemyLab({ bases }: { bases: BaseProduct[] }) {
                             <button
                                 disabled={!selectedBase}
                                 onClick={() => setStep(2)}
-                                className={`px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all ${!selectedBase ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-white text-slate-950 hover:bg-indigo-600 hover:text-white shadow-xl shadow-white/5 active:scale-95'}`}
+                                className={`w-full md:w-auto px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all ${!selectedBase ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-white text-slate-950 hover:bg-indigo-600 hover:text-white shadow-xl shadow-white/5 active:scale-95'}`}
                             >
                                 Siguiente Fase <ArrowRight className="w-4 h-4" />
                             </button>
@@ -188,11 +188,11 @@ export default function AlchemyLab({ bases }: { bases: BaseProduct[] }) {
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center pt-8 border-t border-white/5">
-                            <button onClick={() => setStep(1)} className="text-slate-500 text-xs font-black uppercase tracking-widest hover:text-white transition-all">← Volver al Base</button>
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8 border-t border-white/5">
+                            <button onClick={() => setStep(1)} className="text-slate-500 text-xs font-black uppercase tracking-widest hover:text-white transition-all order-2 md:order-1">← Volver al Base</button>
                             <button
                                 onClick={() => setStep(3)}
-                                className="px-8 py-4 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-indigo-600 hover:text-white transition-all shadow-xl shadow-white/5 active:scale-95"
+                                className="w-full md:w-auto px-8 py-4 bg-white text-slate-950 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-indigo-600 hover:text-white transition-all shadow-xl shadow-white/5 active:scale-95 order-1 md:order-2"
                             >
                                 Finalizar Alquimia <ArrowRight className="w-4 h-4" />
                             </button>
@@ -230,12 +230,12 @@ export default function AlchemyLab({ bases }: { bases: BaseProduct[] }) {
                             </div>
                         </div>
 
-                        <div className="flex justify-between items-center pt-8 border-t border-white/5">
-                            <button onClick={() => setStep(2)} className="text-slate-500 text-xs font-black uppercase tracking-widest hover:text-white transition-all">← Ajustar</button>
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8 border-t border-white/5">
+                            <button onClick={() => setStep(2)} className="text-slate-500 text-xs font-black uppercase tracking-widest hover:text-white transition-all order-2 md:order-1">← Ajustar</button>
                             <button
                                 disabled={!recipeName || isSaving}
                                 onClick={handleSave}
-                                className={`px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center gap-4 transition-all shadow-2xl ${!recipeName || isSaving ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 shadow-indigo-600/20 active:scale-95'}`}
+                                className={`w-full md:w-auto px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-sm flex items-center justify-center gap-4 transition-all shadow-2xl order-1 md:order-2 ${!recipeName || isSaving ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 shadow-indigo-600/20 active:scale-95'}`}
                             >
                                 {isSaving ? <Zap className="w-5 h-5 animate-spin" /> : <>Guardar Alquimia <Save className="w-5 h-5" /></>}
                             </button>
@@ -245,7 +245,7 @@ export default function AlchemyLab({ bases }: { bases: BaseProduct[] }) {
             </div>
 
             {/* Sidebar info */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 px-4 md:px-0">
                 <div className="p-6 bg-slate-900/40 border border-slate-800 rounded-3xl flex items-center gap-4">
                     <div className="p-3 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
                         <QrCode className="w-5 h-5 text-indigo-400" />

@@ -68,6 +68,7 @@ export default function QuantumPOS({
     const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string>("All");
+    const [activeTab, setActiveTab] = useState<"products" | "cart">("products");
 
     const categories = useMemo(() => {
         const cats = new Set(items.map(i => i.categoryName || "Otros"));
@@ -183,9 +184,33 @@ export default function QuantumPOS({
     };
 
     return (
-        <div className="flex h-[calc(100vh-2rem)] gap-6 overflow-hidden">
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-5rem)] lg:h-[calc(100vh-2rem)] gap-6 overflow-hidden">
+            {/* Mobile Tab Switcher */}
+            <div className="lg:hidden flex bg-slate-900/50 p-1 rounded-2xl border border-slate-800">
+                <button
+                    onClick={() => setActiveTab("products")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "products" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-slate-500 hover:text-slate-300"}`}
+                >
+                    <Package className="w-4 h-4" /> Productos
+                </button>
+                <button
+                    onClick={() => setActiveTab("cart")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === "cart" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" : "text-slate-500 hover:text-slate-300"}`}
+                >
+                    <div className="relative">
+                        <ShoppingCart className="w-4 h-4" />
+                        {cart.length > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-500 text-white text-[8px] flex items-center justify-center rounded-full border border-slate-900">
+                                {cart.length}
+                            </span>
+                        )}
+                    </div>
+                    Carrito
+                </button>
+            </div>
+
             {/* Left side: Product Selection */}
-            <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+            <div className={`flex-1 flex flex-col gap-6 overflow-hidden ${activeTab !== "products" ? "hidden lg:flex" : "flex"}`}>
                 <div className="flex items-center justify-between gap-4">
                     <div className="relative flex-1">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
@@ -242,7 +267,7 @@ export default function QuantumPOS({
             </div>
 
             {/* Right side: Cart & Checkout */}
-            <div className="w-96 flex flex-col gap-6">
+            <div className={`w-full lg:w-96 flex flex-col gap-6 ${activeTab !== "cart" ? "hidden lg:flex" : "flex"}`}>
                 <div className="flex-1 bg-slate-900/40 border border-slate-800 rounded-[2.5rem] flex flex-col overflow-hidden backdrop-blur-xl shadow-2xl">
                     <div className="p-6 border-b border-slate-800/50 flex items-center justify-between">
                         <div className="flex items-center gap-3">

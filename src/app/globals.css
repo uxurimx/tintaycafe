@@ -1,15 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020617;
-  --foreground: #f8fafc;
+  --background: #FFF8EF;
+  --foreground: #3B1F0B;
+  --cafe-dark: #3B1F0B;
+  --cafe-creme: #FFF8EF;
+  --cafe-gold: #D4A24E;
+  --cafe-terracotta: #C1452B;
+  --cafe-milk: #8B5E3C;
+  --cafe-white: #FFFDF9;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-cafe-dark: var(--cafe-dark);
+  --color-cafe-creme: var(--cafe-creme);
+  --color-cafe-gold: var(--cafe-gold);
+  --color-cafe-terracotta: var(--cafe-terracotta);
+  --color-cafe-milk: var(--cafe-milk);
+  --color-cafe-white: var(--cafe-white);
   --font-sans: var(--font-inter);
   --font-outfit: var(--font-outfit);
+  --font-playfair: var(--font-playfair);
 }
 
 body {
@@ -19,10 +32,21 @@ body {
 }
 
 @keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-  100% { transform: translate(0px, 0px) scale(1); }
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
 }
 
 .animate-blob {
@@ -38,8 +62,15 @@ body {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {

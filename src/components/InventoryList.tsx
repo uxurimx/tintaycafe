@@ -167,26 +167,26 @@ export default function InventoryList({
         <div className="w-full space-y-8 animate-fade-in p-2">
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                <div className="text-left">
-                    <h2 className="text-4xl font-outfit font-black tracking-tighter text-white">
-                        ORQUESTADOR <span className="text-indigo-500 italic">NEURAL</span>
+                <div className="text-left w-full md:w-auto">
+                    <h2 className="text-3xl md:text-4xl font-outfit font-black tracking-tighter text-white uppercase italic">
+                        Orquestador <span className="text-indigo-500">Neural</span>
                     </h2>
-                    <div className="flex items-center gap-3 mt-2">
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full">
+                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full shrink-0">
                             <span className="w-2 h-2 bg-indigo-500 rounded-full animate-ping" />
-                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Sincronicidad Activa</span>
+                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Activo</span>
                         </div>
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">V.2.0 | Multi-Sucursal</p>
+                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Multi-Sucursal</p>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                    <div className="relative group flex-1 min-w-[300px]">
+                <div className="flex flex-wrap items-center gap-2 md:gap-3 w-full lg:w-auto">
+                    <div className="relative group flex-1 lg:flex-none lg:min-w-[300px]">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Escanear o buscar producto..."
-                            className="w-full pl-12 pr-4 py-3.5 bg-slate-900/50 border border-slate-800 rounded-3xl text-sm focus:outline-none focus:border-indigo-500/50 focus:bg-slate-900 transition-all text-white backdrop-blur-md"
+                            placeholder="Buscar..."
+                            className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-2xl md:rounded-3xl text-sm focus:outline-none focus:border-indigo-500/50 focus:bg-slate-900 transition-all text-white backdrop-blur-md"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -194,37 +194,37 @@ export default function InventoryList({
 
                     <button
                         onClick={() => { setModalType('item'); setIsEditMode(false); setIsModalOpen(true); }}
-                        className="p-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl shadow-xl shadow-indigo-600/20 active:scale-95 transition-all text-xs font-bold uppercase tracking-widest flex items-center gap-2"
+                        className="flex-1 lg:flex-none p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl md:rounded-2xl shadow-xl shadow-indigo-600/20 active:scale-95 transition-all text-[10px] md:text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
                     >
-                        <Plus className="w-5 h-5" /> Producto
+                        <Plus className="w-4 h-4 md:w-5 md:h-5" /> Producto
                     </button>
 
                     <div className="flex gap-2">
                         <button
                             onClick={() => { setModalType('category'); setIsModalOpen(true); }}
-                            className="p-3.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-2xl transition-all"
+                            className="p-3 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl md:rounded-2xl transition-all"
                             title="Gestionar Categorías"
                         >
-                            <Tags className="w-5 h-5" />
+                            <Tags className="w-4 h-4 md:w-5 md:h-5" />
                         </button>
                         <button
                             onClick={() => { setModalType('store'); setIsModalOpen(true); }}
-                            className="p-3.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-2xl transition-all"
+                            className="p-3 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl md:rounded-2xl transition-all"
                             title="Gestionar Sucursales"
                         >
-                            <MapPin className="w-5 h-5" />
+                            <MapPin className="w-4 h-4 md:w-5 md:h-5" />
                         </button>
                     </div>
                 </div>
             </div>
 
             {/* Categories Toolbar */}
-            <div className="flex items-center gap-4 border-b border-slate-900 pb-4 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-3 md:gap-4 border-b border-slate-900 pb-4 overflow-x-auto scrollbar-hide px-2">
                 <Filter className="w-4 h-4 text-slate-600 flex-shrink-0" />
                 <button
                     onClick={() => setActiveCategory('all')}
-                    className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border shrink-0
-            ${activeCategory === 'all' ? "bg-white text-slate-950 border-white shadow-lg" : "bg-transparent text-slate-500 border-slate-800 hover:text-slate-300"}
+                    className={`px-4 md:px-6 py-2 md:py-2.5 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all border shrink-0
+            ${activeCategory === 'all' ? "bg-white text-slate-950 border-white shadow-lg" : "bg-transparent text-slate-500 border-slate-800 hover:text-white"}
           `}
                 >
                     Todo
@@ -233,8 +233,8 @@ export default function InventoryList({
                     <button
                         key={cat.id}
                         onClick={() => setActiveCategory(cat.id.toString())}
-                        className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border shrink-0 flex items-center gap-2
-              ${activeCategory === cat.id.toString() ? "bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/20" : "bg-transparent text-slate-500 border-slate-800 hover:text-slate-300"}
+                        className={`px-4 md:px-6 py-2 md:py-2.5 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 flex items-center gap-2
+              ${activeCategory === cat.id.toString() ? "bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/20" : "bg-transparent text-slate-500 border-slate-800 hover:text-white"}
             `}
                     >
                         {getIcon(cat.icon)}
@@ -243,9 +243,10 @@ export default function InventoryList({
                 ))}
             </div>
 
-            {/* Main Grid Table */}
-            <div className="grid grid-cols-1 gap-6">
-                <div className="rounded-[2.5rem] border border-slate-800 bg-slate-950/40 backdrop-blur-xl overflow-hidden shadow-2xl ring-1 ring-white/5">
+            {/* Main Grid List */}
+            <div className="space-y-4">
+                {/* Desktop View Table */}
+                <div className="hidden lg:block rounded-[2.5rem] border border-slate-800 bg-slate-950/40 backdrop-blur-xl overflow-hidden shadow-2xl ring-1 ring-white/5">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-900/30 border-b border-slate-800">
@@ -327,6 +328,63 @@ export default function InventoryList({
                         </tbody>
                     </table>
                 </div>
+
+                {/* Mobile View Cards */}
+                <div className="lg:hidden space-y-4 px-2">
+                    {filteredItems.map((item) => (
+                        <div key={item.uId} className="p-5 bg-slate-900/40 border border-slate-800 rounded-3xl backdrop-blur-xl space-y-4 shadow-xl">
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-4">
+                                    <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 shadow-md">
+                                        {categories.find(c => c.id === item.categoryId)?.icon ? getIcon(categories.find(c => c.id === item.categoryId)!.icon) : <Package className="w-5 h-5 text-slate-500" />}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-slate-100 text-base">{item.name}</h4>
+                                        <p className="text-[10px] text-zinc-600 font-mono tracking-tighter">REF_{item.barcode}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className={`text-2xl font-outfit font-black tracking-tighter ${item.quantity <= item.minStock ? 'text-rose-500' : 'text-indigo-400'}`}>
+                                        {item.quantity}
+                                    </p>
+                                    <p className="text-[8px] font-black text-slate-500 uppercase">Stock Actual</p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between items-center pt-4 border-t border-slate-800/50">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-2 py-1 bg-slate-950 rounded-lg border border-slate-800">
+                                        {categories.find(c => c.id === item.categoryId)?.name || 'General'}
+                                    </span>
+                                    <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest flex items-center gap-1">
+                                        <Store className="w-2.5 h-2.5" />
+                                        {stores.find(s => s.id === item.storeId)?.name || 'Sucursal'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => { setSelectedItem(item); setIsEditMode(true); setModalType('item'); setIsModalOpen(true); }}
+                                        className="p-2.5 bg-slate-950 text-slate-400 rounded-xl border border-slate-800"
+                                    >
+                                        <Edit3 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => { setSelectedItem(item); setModalType('transfer'); setIsModalOpen(true); }}
+                                        className="p-2.5 bg-slate-950 text-slate-400 rounded-xl border border-slate-800"
+                                    >
+                                        <ArrowLeftRight className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(item.id)}
+                                        className="p-2.5 bg-slate-950 text-rose-500/50 rounded-xl border border-slate-800"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* Unified Modal System */}
@@ -351,7 +409,7 @@ export default function InventoryList({
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-5 md:p-8 custom-scrollbar">
 
                             {/* ITEM MODAL */}
                             {modalType === 'item' && (
@@ -373,7 +431,7 @@ export default function InventoryList({
                                         }
                                     }
                                     setIsModalOpen(false);
-                                }} className="grid grid-cols-2 gap-8">
+                                }} className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                                     <div className="col-span-2 space-y-2">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre Descriptivo</label>
                                         <input name="name" defaultValue={isEditMode ? selectedItem?.name : ""} required className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none focus:border-indigo-500 transition-all font-medium shadow-inner" placeholder="P Ej. Specialty Beans / Catan" />
