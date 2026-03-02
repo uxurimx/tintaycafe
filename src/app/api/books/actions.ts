@@ -15,19 +15,26 @@ export async function addAutoBook(data: {
     price: number;
     initialStock: number;
     storeId: number;
+    categoryId?: number;
+    supplierId?: number;
 }) {
-    // 1. Ensure "Libros" category exists
-    let bookCategory = await db.query.categories.findFirst({
-        where: eq(categories.name, "Libros")
-    });
+    // 1. Ensure "Libros" category exists (fallback if no categoryId provided)
+    let bookCategory = null;
+    if (!data.categoryId) {
+        bookCategory = await db.query.categories.findFirst({
+            where: eq(categories.name, "Libros")
+        });
 
-    if (!bookCategory) {
-        const [newCat] = await db.insert(categories).values({
-            name: "Libros",
-            icon: "Book"
-        }).returning();
-        bookCategory = newCat;
+        if (!bookCategory) {
+            const [newCat] = await db.insert(categories).values({
+                name: "Libros",
+                icon: "Book"
+            }).returning();
+            bookCategory = newCat;
+        }
     }
+
+    const finalCategoryId = data.categoryId || bookCategory?.id;
 
     // 2. Check if item already exists by barcode
     let item = await db.query.items.findFirst({
@@ -41,12 +48,13 @@ export async function addAutoBook(data: {
             description: data.description,
             barcode: data.barcode,
             type: "book",
-            categoryId: bookCategory.id,
+            categoryId: finalCategoryId,
             category: "Libros",
             imageUrl: data.imageUrl,
             metadata: data.metadata,
             price: data.price,
             costPrice: data.costPrice,
+            supplierId: data.supplierId,
         }).returning();
         item = newItem;
     } else {
@@ -58,8 +66,9 @@ export async function addAutoBook(data: {
             metadata: data.metadata,
             price: data.price,
             costPrice: data.costPrice,
-            categoryId: bookCategory.id,
+            categoryId: finalCategoryId,
             category: "Libros",
+            supplierId: data.supplierId,
         }).where(eq(items.id, item.id));
     }
 

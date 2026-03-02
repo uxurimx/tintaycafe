@@ -16,6 +16,7 @@ export async function addInventoryItem(formData: FormData) {
     const type = formData.get("type") as string;
     const categoryId = formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null;
     const costPrice = formData.get("costPrice") ? parseFloat(formData.get("costPrice") as string) : 0;
+    const price = formData.get("price") ? parseFloat(formData.get("price") as string) : 0;
     const unit = formData.get("unit") as string;
     const supplierId = formData.get("supplierId") ? parseInt(formData.get("supplierId") as string) : null;
     const isSupply = formData.get("isSupply") === "true";
@@ -42,13 +43,14 @@ export async function addInventoryItem(formData: FormData) {
             type: type as any,
             categoryId,
             costPrice,
+            price,
             unit,
             supplierId,
             isSupply,
         })
         .onConflictDoUpdate({
             target: items.barcode,
-            set: { name, categoryId, costPrice, unit, supplierId, isSupply },
+            set: { name, categoryId, costPrice, price, unit, supplierId, isSupply },
         })
         .returning();
 
@@ -114,16 +116,18 @@ export async function updateInventoryItem(itemId: number, storeId: number, data:
     minStock?: number;
     categoryId?: number | null;
     costPrice?: number;
+    price?: number;
     unit?: string;
     supplierId?: number | null;
     isSupply?: boolean;
 }) {
     try {
-        if (data.name || data.categoryId !== undefined || data.costPrice !== undefined || data.unit !== undefined || data.supplierId !== undefined) {
+        if (data.name || data.categoryId !== undefined || data.costPrice !== undefined || data.price !== undefined || data.unit !== undefined || data.supplierId !== undefined || data.isSupply !== undefined) {
             await db.update(items).set({
                 name: data.name,
                 categoryId: data.categoryId,
                 costPrice: data.costPrice,
+                price: data.price,
                 unit: data.unit,
                 supplierId: data.supplierId,
                 isSupply: data.isSupply,

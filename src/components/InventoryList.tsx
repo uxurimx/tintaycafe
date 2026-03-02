@@ -55,6 +55,7 @@ interface InventoryItem {
     storeId: number;
     minStock: number;
     costPrice?: number;
+    price?: number;
     unit?: string;
     supplierId?: number | null;
     isSupply: boolean;
@@ -428,6 +429,10 @@ export default function InventoryList({
                                             name: formData.get("name") as string,
                                             quantity: parseFloat(formData.get("quantity") as string),
                                             categoryId: formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : null,
+                                            costPrice: formData.get("costPrice") ? parseFloat(formData.get("costPrice") as string) : 0,
+                                            price: formData.get("price") ? parseFloat(formData.get("price") as string) : 0,
+                                            unit: formData.get("unit") as string,
+                                            supplierId: formData.get("supplierId") ? parseInt(formData.get("supplierId") as string) : null,
                                             isSupply: formData.get("isSupply") === "true"
                                         });
                                         if (res.success && res.data) {
@@ -473,6 +478,10 @@ export default function InventoryList({
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Precio de Costo</label>
                                         <input name="costPrice" type="number" step="0.01" defaultValue={isEditMode ? selectedItem?.costPrice : "0"} className="w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-5 text-white focus:outline-none" placeholder="$0.00" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black text-indigo-400 uppercase tracking-widest ml-1">Precio de Venta</label>
+                                        <input name="price" type="number" step="0.01" defaultValue={isEditMode ? selectedItem?.price : "0"} className="w-full bg-slate-900/50 border border-indigo-500/50 rounded-3xl p-5 text-white focus:outline-none placeholder:text-slate-600" placeholder="$0.00" />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Proveedor Aliado</label>

@@ -28,9 +28,11 @@ interface BookData {
         thumbnail: string;
     };
     isbn: string;
+    categoryId?: string;
+    supplierId?: string;
 }
 
-export default function BookAutomation({ stores }: { stores: any[] }) {
+export default function BookAutomation({ stores, categories, suppliers }: { stores: any[], categories: any[], suppliers: any[] }) {
     const [isbn, setIsbn] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [book, setBook] = useState<BookData | null>(null);
@@ -85,6 +87,18 @@ export default function BookAutomation({ stores }: { stores: any[] }) {
         inputRef.current?.focus();
     }, []);
 
+    const emptyBook = (code: string): BookData => ({
+        title: "",
+        authors: [""],
+        publisher: "",
+        publishedDate: "",
+        description: "",
+        imageLinks: { thumbnail: "" },
+        isbn: code,
+        categoryId: "",
+        supplierId: ""
+    });
+
     const fetchBookData = async (code: string, silent = false) => {
         if (!code || code.length < 10) return;
 
@@ -95,13 +109,15 @@ export default function BookAutomation({ stores }: { stores: any[] }) {
             const data = await res.json();
 
             if (data.error) {
-                if (!silent) toast.error("No se encontró el libro. Intenta manualmente.");
+                if (!silent) toast.error("No se encontró el libro. Ingresa los datos manualmente.");
+                setBook(emptyBook(code));
             } else {
-                setBook(data);
-                toast.success("¡Libro encontrado!");
+                setBook({ ...data, categoryId: "", supplierId: "" });
+                toast.success("¡Libro encontrado! Verifica los datos.");
             }
         } catch (error) {
-            if (!silent) toast.error("Error al buscar el libro");
+            if (!silent) toast.error("Error al buscar el libro, ingresa manual.");
+            setBook(emptyBook(code));
         } finally {
             setIsLoading(false);
         }
@@ -124,9 +140,15 @@ export default function BookAutomation({ stores }: { stores: any[] }) {
         }
     };
 
+    const handleBookChange = (field: keyof BookData, value: any) => {
+        if (book) {
+            setBook({ ...book, [field]: value });
+        }
+    };
+
     const handleSave = async () => {
-        if (!book || !salePrice || !selectedStore) {
-            toast.error("Completa los precios y selecciona una sucursal");
+        if (!book || !salePrice || !selectedStore || !book.title) {
+            toast.error("Completa el título, los precios y selecciona una sucursal");
             return;
         }
 
@@ -145,7 +167,9 @@ export default function BookAutomation({ stores }: { stores: any[] }) {
                 costPrice: parseFloat(costPrice) || 0,
                 price: parseFloat(salePrice),
                 initialStock: parseFloat(stock) || 0,
-                storeId: parseInt(selectedStore)
+                storeId: parseInt(selectedStore),
+                categoryId: book.categoryId ? parseInt(book.categoryId) : undefined,
+                supplierId: book.supplierId ? parseInt(book.supplierId) : undefined
             });
 
             if (result.success) {
@@ -226,14 +250,14 @@ export default function BookAutomation({ stores }: { stores: any[] }) {
                     </div>
                 )}
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-4">
-                    Soporta escáners de hardware y entrada manual (ISBN-10 / ISBN-13)
+                    Soporta escáners de hardware y entrada manual (ISBN-10 / ISBN-13). Si no se encuentra, podrás llenarlo.
                 </p>
             </div>
 
             {/* Results & Form Section */}
             {book && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in slide-in-from-bottom duration-500">
-                    {/* Book Preview */}
+                    {/* Editable Book Preview */}
                     <div className="lg:col-span-2 bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-8 space-y-8 overflow-hidden relative">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 rounded-full blur-[80px] -z-10" />
 
@@ -242,37 +266,61 @@ export default function BookAutomation({ stores }: { stores: any[] }) {
                                 {book.imageLinks?.thumbnail ? (
                                     <img
                                         src={book.imageLinks.thumbnail.replace("http://", "https://")}
-                                        alt={book.title}
+                                        alt={book.title || "Portada"}
                                         className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            // Handle broken images gracefully if manual URL is bad
+                                            (e.target as HTMLImageElement).src = "";
+                                        }}
                                     />
                                 ) : (
                                     <ImageIcon className="w-16 h-16 text-slate-800" />
                                 )}
                             </div>
 
-                            <div className="space-y-6 flex-1 text-left">
-                                <div>
-                                    <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black uppercase tracking-widest text-indigo-400">
-                                        {book.publisher || "Editorial Desconocida"}
-                                    </span>
-                                    <h2 className="text-3xl font-playfair font-black text-white mt-4 italic leading-tight">{book.title}</h2>
-                                    <p className="text-slate-400 font-medium text-lg mt-2">por {book.authors.join(", ")}</p>
+                            <div className="space-y-4 flex-1 text-left">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">Título</label>
+                                    <input type="text" value={book.title} onChange={e => handleBookChange("title", e.target.value)} placeholder="Título del libro" className="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 text-white font-playfair font-black text-2xl italic outline-none focus:border-indigo-500" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">Autor(es)</label>
+                                        <input type="text" value={book.authors.join(", ")} onChange={e => handleBookChange("authors", e.target.value.split(",").map(a => a.trimLeft()))} placeholder="Autores (separados por coma)" className="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 text-white text-sm outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">Editorial</label>
+                                        <input type="text" value={book.publisher || ""} onChange={e => handleBookChange("publisher", e.target.value)} placeholder="Editorial" className="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 text-white text-sm outline-none focus:border-indigo-500" />
+                                    </div>
                                 </div>
 
-                                <div className="p-4 bg-slate-950/50 rounded-2xl border border-slate-800/50">
-                                    <p className="text-slate-500 text-sm leading-relaxed line-clamp-4 italic">
-                                        {book.description || "Sin descripción disponible."}
-                                    </p>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">Descripción</label>
+                                    <textarea value={book.description || ""} onChange={e => handleBookChange("description", e.target.value)} placeholder="Descripción corta..." className="w-full h-24 bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 text-white text-xs outline-none focus:border-indigo-500 resize-none" />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Publicado</p>
-                                        <p className="text-white font-bold">{book.publishedDate || "N/A"}</p>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">Categoría</label>
+                                        <select value={book.categoryId || ""} onChange={e => handleBookChange("categoryId", e.target.value)} className="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 text-white text-sm outline-none focus:border-indigo-500 appearance-none">
+                                            <option value="">(Solo Libros)</option>
+                                            {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">ISBN Identificado</p>
-                                        <p className="text-white font-bold">{book.isbn}</p>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">Proveedor</label>
+                                        <select value={book.supplierId || ""} onChange={e => handleBookChange("supplierId", e.target.value)} className="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 text-white text-sm outline-none focus:border-indigo-500 appearance-none">
+                                            <option value="">Selecciona Proveedor</option>
+                                            {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">Año Pub.</label>
+                                        <input type="text" value={book.publishedDate || ""} onChange={e => handleBookChange("publishedDate", e.target.value)} placeholder="Ej. 2023" className="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 text-white text-sm outline-none focus:border-indigo-500" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest pl-2">URL Portada</label>
+                                        <input type="text" value={book.imageLinks?.thumbnail || ""} onChange={e => handleBookChange("imageLinks", { thumbnail: e.target.value })} placeholder="https://..." className="w-full bg-slate-950/50 border border-slate-800 rounded-xl py-2 px-4 text-white text-sm outline-none focus:border-indigo-500" />
                                     </div>
                                 </div>
                             </div>
